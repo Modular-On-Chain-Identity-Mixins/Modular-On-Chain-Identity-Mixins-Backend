@@ -1,0 +1,19 @@
+[package]
+name = "soroban-compliance-kit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+soroban-sdk.workspace = true
+
+# Pin to avoid ed25519-dalek v3 + rand_core 0.10 incompatibility with soroban-env-host's testutils
+ed25519-dalek.workspace = true
+
+[features]
+default = []
+testutils = ["soroban-sdk/testutils"]

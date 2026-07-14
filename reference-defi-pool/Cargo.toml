@@ -1,0 +1,18 @@
+[package]
+name = "reference-defi-pool"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["lib"]
+doctest = false
+
+[dependencies]
+soroban-sdk.workspace = true
+soroban-compliance-kit.workspace = true
+identity-registry = { path = "../identity-registry" }
+
+[features]
+testutils = ["soroban-sdk/testutils", "soroban-compliance-kit/testutils"]
