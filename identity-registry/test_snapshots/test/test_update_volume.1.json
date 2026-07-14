@@ -19,20 +19,20 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
                 },
                 {
-                  "bytes": "6469643a6578616d706c653a343536"
+                  "bytes": "6469643a6578616d706c653a766f6c"
                 },
                 {
                   "vec": [
                     {
-                      "symbol": "Eu"
+                      "symbol": "Us"
                     }
                   ]
                 },
                 {
-                  "bytes": "4555"
+                  "bytes": "5553"
                 },
                 {
-                  "u32": 2
+                  "u32": 1
                 }
               ]
             }
@@ -60,7 +60,6 @@
         }
       ]
     ],
-    [],
     [
       [
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
@@ -90,6 +89,9 @@
         }
       ]
     ],
+    [],
+    [],
+    [],
     []
   ],
   "ledger": {
@@ -215,7 +217,7 @@
                               "symbol": "country_code"
                             },
                             "val": {
-                              "bytes": "4555"
+                              "bytes": "5553"
                             }
                           },
                           {
@@ -223,7 +225,7 @@
                               "symbol": "did"
                             },
                             "val": {
-                              "bytes": "6469643a6578616d706c653a343536"
+                              "bytes": "6469643a6578616d706c653a766f6c"
                             }
                           },
                           {
@@ -233,7 +235,7 @@
                             "val": {
                               "vec": [
                                 {
-                                  "symbol": "Eu"
+                                  "symbol": "Us"
                                 }
                               ]
                             }
@@ -255,7 +257,47 @@
                               "symbol": "tier"
                             },
                             "val": {
-                              "u32": 2
+                              "u32": 1
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "Volume"
+                          },
+                          {
+                            "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "map": [
+                          {
+                            "key": {
+                              "symbol": "daily_volume"
+                            },
+                            "val": {
+                              "i128": "1500"
+                            }
+                          },
+                          {
+                            "key": {
+                              "symbol": "last_tx_timestamp"
+                            },
+                            "val": {
+                              "u64": "0"
+                            }
+                          },
+                          {
+                            "key": {
+                              "symbol": "monthly_volume"
+                            },
+                            "val": {
+                              "i128": "1500"
                             }
                           }
                         ]

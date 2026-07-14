@@ -44,7 +44,7 @@ fn test_kyc_verification_flow() {
     let country_code = Bytes::from_slice(&env, b"EU");
 
     client.register(&user, &did, &Jurisdiction::Eu, &country_code, &2u32);
-    client.add_verifier(&admin, &verifier);
+    client.add_verifier(&verifier);
 
     assert!(!client.verify(&user));
 
@@ -95,7 +95,7 @@ fn test_jurisdiction_support() {
     let eu = Bytes::from_slice(&env, b"EU");
 
     let jurisdictions: Vec<Bytes> = Vec::from_array(&env, [us.clone(), eu.clone()]);
-    client.set_supported_jurisdictions(&admin, &jurisdictions);
+    client.set_supported_jurisdictions(&jurisdictions);
 
     let cn = Bytes::from_slice(&env, b"CN");
     assert!(client.is_jurisdiction_supported(&us));
@@ -119,4 +119,31 @@ fn test_get_identity_record() {
     assert_eq!(record.did, did);
     assert_eq!(record.kyc_status, KycStatus::Pending);
     assert_eq!(record.tier, 1);
+    assert_eq!(record.daily_volume, 0);
+    assert_eq!(record.monthly_volume, 0);
+}
+
+#[test]
+fn test_update_volume() {
+    let (env, admin, verifier, user) = setup_env();
+
+    let contract_id = env.register(IdentityRegistryContract, (&admin,));
+    let client = crate::contract::IdentityRegistryContractClient::new(&env, &contract_id);
+
+    let did = Bytes::from_slice(&env, b"did:example:vol");
+    let country_code = Bytes::from_slice(&env, b"US");
+
+    client.register(&user, &did, &Jurisdiction::Us, &country_code, &1u32);
+    client.add_verifier(&verifier);
+    client.update_kyc(&verifier, &user, &KycStatus::Verified);
+
+    client.update_volume(&user, &1000i128);
+    let record = client.get_identity_record(&user);
+    assert_eq!(record.daily_volume, 1000);
+    assert_eq!(record.monthly_volume, 1000);
+
+    client.update_volume(&user, &500i128);
+    let record = client.get_identity_record(&user);
+    assert_eq!(record.daily_volume, 1500);
+    assert_eq!(record.monthly_volume, 1500);
 }

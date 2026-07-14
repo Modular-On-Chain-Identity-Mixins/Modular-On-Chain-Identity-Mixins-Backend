@@ -1,15 +1,15 @@
-use soroban_sdk::{
-    contract, contractimpl, token, Address, Bytes, Env, Vec,
-};
+#![allow(deprecated)]
+
+use soroban_sdk::{contract, contractimpl, symbol_short, token, Address, Bytes, Env, Vec};
 
 use soroban_compliance_kit::rule_engine;
-use soroban_compliance_kit::{
-    compliance_deposit_check, compliance_transfer_check, compliance_withdraw_check,
-};
+use soroban_compliance_kit::traits::ComplianceManager;
 use soroban_compliance_kit::types::{
     ComplianceAction, ComplianceConfig, ComplianceError, ComplianceRule, IdentityRecord, KycStatus,
 };
-use soroban_compliance_kit::traits::ComplianceManager;
+use soroban_compliance_kit::{
+    compliance_deposit_check, compliance_transfer_check, compliance_withdraw_check,
+};
 
 use crate::storage::{self, PoolConfig};
 
@@ -21,6 +21,7 @@ type Contract = DefiPoolContract;
 pub struct DefiPoolContract;
 
 impl ComplianceManager for DefiPoolContract {
+    /// Initialise the compliance module with an owner, registry, and limits.
     fn init_compliance(
         env: &Env,
         owner: Address,
@@ -112,10 +113,7 @@ impl ComplianceManager for DefiPoolContract {
             return Err(ComplianceError::ContractPaused);
         }
 
-        let registry_client = IdentityRegistryContractClient::new(
-            env,
-            &config.identity_registry,
-        );
+        let registry_client = IdentityRegistryContractClient::new(env, &config.identity_registry);
 
         let sender_record = registry_client.get_identity_record(sender);
 
@@ -177,12 +175,21 @@ impl ComplianceManager for DefiPoolContract {
         balance: Option<i128>,
     ) -> Result<(), ComplianceError> {
         let config = storage::read_compliance_config(env);
-        rule_engine::evaluate_rules(env, user, &config.rules, action, amount, total_supply, balance)
+        rule_engine::evaluate_rules(
+            env,
+            user,
+            &config.rules,
+            action,
+            amount,
+            total_supply,
+            balance,
+        )
     }
 }
 
 #[contractimpl]
 impl DefiPoolContract {
+    /// Initialise the pool with a token, admin, and compliance config.
     pub fn __constructor(
         env: Env,
         token: Address,
@@ -216,6 +223,9 @@ impl DefiPoolContract {
         );
     }
 
+    /// Deposit tokens into the pool after compliance checks.
+    ///
+    /// On success, the sender's volume counters are updated in the registry.
     pub fn deposit(env: Env, from: Address, amount: i128) -> Result<(), ComplianceError> {
         compliance_deposit_check!(Contract, env, from, amount);
 
@@ -230,9 +240,21 @@ impl DefiPoolContract {
         pool_config.total_liquidity += amount;
         storage::write_pool_config(&env, &pool_config);
 
+        let config = storage::read_compliance_config(&env);
+        let registry_client = IdentityRegistryContractClient::new(&env, &config.identity_registry);
+        registry_client.update_volume(&from, &amount);
+
+        env.events().publish(
+            (symbol_short!("evt"), symbol_short!("deposit")),
+            (from, amount, pool_config.total_liquidity),
+        );
+
         Ok(())
     }
 
+    /// Withdraw tokens from the pool after compliance checks.
+    ///
+    /// On success, the sender's volume counters are updated in the registry.
     pub fn withdraw(env: Env, to: Address, amount: i128) -> Result<(), ComplianceError> {
         let pool_config = storage::read_pool_config(&env);
         compliance_withdraw_check!(Contract, env, to, to, amount);
@@ -248,39 +270,71 @@ impl DefiPoolContract {
         pool_config.total_liquidity -= amount;
         storage::write_pool_config(&env, &pool_config);
 
+        let config = storage::read_compliance_config(&env);
+        let registry_client = IdentityRegistryContractClient::new(&env, &config.identity_registry);
+        registry_client.update_volume(&to, &amount);
+
+        env.events().publish(
+            (symbol_short!("evt"), symbol_short!("withdraw")),
+            (to, amount, pool_config.total_liquidity),
+        );
+
         Ok(())
     }
 
-    pub fn transfer(env: Env, from: Address, to: Address, amount: i128) -> Result<(), ComplianceError> {
+    /// Transfer tokens between users after compliance checks.
+    ///
+    /// On success, the sender's volume counters are updated in the registry.
+    pub fn transfer(
+        env: Env,
+        from: Address,
+        to: Address,
+        amount: i128,
+    ) -> Result<(), ComplianceError> {
         compliance_transfer_check!(Contract, env, from, to, amount);
 
         let pool_config = storage::read_pool_config(&env);
         let token_client = token::TokenClient::new(&env, &pool_config.token);
         token_client.transfer(&from, &to, &amount);
 
+        let config = storage::read_compliance_config(&env);
+        let registry_client = IdentityRegistryContractClient::new(&env, &config.identity_registry);
+        registry_client.update_volume(&from, &amount);
+
+        env.events().publish(
+            (symbol_short!("evt"), symbol_short!("transfer")),
+            (from, to, amount),
+        );
+
         Ok(())
     }
 
+    /// Get the pool configuration.
     pub fn get_pool_config(env: Env) -> PoolConfig {
         storage::read_pool_config(&env)
     }
 
+    /// Get the compliance configuration.
     pub fn get_compliance_config(env: Env) -> ComplianceConfig {
         <DefiPoolContract as ComplianceManager>::get_config(&env)
     }
 
+    /// Add a compliance rule (owner-only).
     pub fn add_compliance_rule(env: Env, rule: ComplianceRule) {
         <DefiPoolContract as ComplianceManager>::add_rule(&env, rule);
     }
 
+    /// Remove a compliance rule by index (owner-only).
     pub fn remove_compliance_rule(env: Env, index: u32) {
         <DefiPoolContract as ComplianceManager>::remove_rule(&env, index);
     }
 
+    /// Pause all pool operations (owner-only).
     pub fn pause_contract(env: Env) {
         <DefiPoolContract as ComplianceManager>::pause(&env);
     }
 
+    /// Unpause pool operations (owner-only).
     pub fn unpause_contract(env: Env) {
         <DefiPoolContract as ComplianceManager>::unpause(&env);
     }

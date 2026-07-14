@@ -1,3 +1,7 @@
+/// Core compliance gate: verify auth then enforce all compliance rules.
+///
+/// Should be called inside business-logic functions after pause checks.
+/// Used internally by the action-specific macros below.
 #[macro_export]
 macro_rules! require_compliance {
     ($contract:ty, $env:expr, $sender:expr, $recipient:expr, $amount:expr, $action:expr) => {{
@@ -12,16 +16,25 @@ macro_rules! require_compliance {
     }};
 }
 
+/// Check pause state and enforce compliance for a transfer action.
 #[macro_export]
 macro_rules! compliance_transfer_check {
     ($contract:ty, $env:expr, $from:expr, $to:expr, $amount:expr) => {{
         if <$contract as $crate::traits::ComplianceManager>::is_paused(&$env) {
             return Err($crate::types::ComplianceError::ContractPaused);
         }
-        $crate::require_compliance!($contract, $env, $from, $to, $amount, $crate::types::ComplianceAction::Transfer)
+        $crate::require_compliance!(
+            $contract,
+            $env,
+            $from,
+            $to,
+            $amount,
+            $crate::types::ComplianceAction::Transfer
+        )
     }};
 }
 
+/// Check pause state and enforce compliance for a deposit action.
 #[macro_export]
 macro_rules! compliance_deposit_check {
     ($contract:ty, $env:expr, $from:expr, $amount:expr) => {{
@@ -29,16 +42,31 @@ macro_rules! compliance_deposit_check {
             return Err($crate::types::ComplianceError::ContractPaused);
         }
         let _recipient = $from.clone();
-        $crate::require_compliance!($contract, $env, $from, _recipient, $amount, $crate::types::ComplianceAction::Deposit)
+        $crate::require_compliance!(
+            $contract,
+            $env,
+            $from,
+            _recipient,
+            $amount,
+            $crate::types::ComplianceAction::Deposit
+        )
     }};
 }
 
+/// Check pause state and enforce compliance for a withdraw action.
 #[macro_export]
 macro_rules! compliance_withdraw_check {
     ($contract:ty, $env:expr, $from:expr, $to:expr, $amount:expr) => {{
         if <$contract as $crate::traits::ComplianceManager>::is_paused(&$env) {
             return Err($crate::types::ComplianceError::ContractPaused);
         }
-        $crate::require_compliance!($contract, $env, $from, $to, $amount, $crate::types::ComplianceAction::Withdraw)
+        $crate::require_compliance!(
+            $contract,
+            $env,
+            $from,
+            $to,
+            $amount,
+            $crate::types::ComplianceAction::Withdraw
+        )
     }};
 }

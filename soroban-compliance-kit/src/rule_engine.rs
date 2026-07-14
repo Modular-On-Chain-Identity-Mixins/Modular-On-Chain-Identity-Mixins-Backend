@@ -2,7 +2,7 @@ use soroban_sdk::{Bytes, Env, Vec};
 
 use crate::types::{
     ComplianceAction, ComplianceError, ComplianceRule, IdentityRecord, Jurisdiction, KycStatus,
-    RuleField, RuleOperator,
+    RuleField, RuleOperator, RuleValue,
 };
 
 fn bytes_to_u128(b: &Bytes) -> u128 {
@@ -20,51 +20,89 @@ fn bytes_to_u128(b: &Bytes) -> u128 {
     u128::from_be_bytes(buf)
 }
 
-fn check_numeric_comparison(
-    field_val: u128,
-    rule_val_bytes: &Bytes,
-    op: &RuleOperator,
-) -> bool {
-    let rule_val = bytes_to_u128(rule_val_bytes);
+fn check_numeric_comparison(field_val: u128, rule_val: &RuleValue, op: &RuleOperator) -> bool {
     match op {
-        RuleOperator::Eq => field_val == rule_val,
-        RuleOperator::Neq => field_val != rule_val,
-        RuleOperator::Gt => field_val > rule_val,
-        RuleOperator::Lt => field_val < rule_val,
-        RuleOperator::Gte => field_val >= rule_val,
-        RuleOperator::Lte => field_val <= rule_val,
-        RuleOperator::In => field_val == rule_val,
-        RuleOperator::NotIn => field_val != rule_val,
+        RuleOperator::In | RuleOperator::NotIn => {
+            let values = match rule_val {
+                RuleValue::Multiple(vals) => vals,
+                _ => return false,
+            };
+            let matched = values.iter().any(|v| field_val == bytes_to_u128(&v));
+            matches!(op, RuleOperator::In) == matched
+        }
+        _ => {
+            let rv = match rule_val {
+                RuleValue::Single(b) => bytes_to_u128(b),
+                _ => return false,
+            };
+            match op {
+                RuleOperator::Eq => field_val == rv,
+                RuleOperator::Neq => field_val != rv,
+                RuleOperator::Gt => field_val > rv,
+                RuleOperator::Lt => field_val < rv,
+                RuleOperator::Gte => field_val >= rv,
+                RuleOperator::Lte => field_val <= rv,
+                _ => false,
+            }
+        }
     }
 }
 
 fn check_numeric_comparison_signed(
     field_val: i128,
-    rule_val_bytes: &Bytes,
+    rule_val: &RuleValue,
     op: &RuleOperator,
 ) -> bool {
-    let rule_val = bytes_to_u128(rule_val_bytes) as i128;
     match op {
-        RuleOperator::Eq => field_val == rule_val,
-        RuleOperator::Neq => field_val != rule_val,
-        RuleOperator::Gt => field_val > rule_val,
-        RuleOperator::Lt => field_val < rule_val,
-        RuleOperator::Gte => field_val >= rule_val,
-        RuleOperator::Lte => field_val <= rule_val,
-        RuleOperator::In => field_val == rule_val,
-        RuleOperator::NotIn => field_val != rule_val,
+        RuleOperator::In | RuleOperator::NotIn => {
+            let values = match rule_val {
+                RuleValue::Multiple(vals) => vals,
+                _ => return false,
+            };
+            let matched = values
+                .iter()
+                .any(|v| field_val == bytes_to_u128(&v) as i128);
+            matches!(op, RuleOperator::In) == matched
+        }
+        _ => {
+            let rv = match rule_val {
+                RuleValue::Single(b) => bytes_to_u128(b) as i128,
+                _ => return false,
+            };
+            match op {
+                RuleOperator::Eq => field_val == rv,
+                RuleOperator::Neq => field_val != rv,
+                RuleOperator::Gt => field_val > rv,
+                RuleOperator::Lt => field_val < rv,
+                RuleOperator::Gte => field_val >= rv,
+                RuleOperator::Lte => field_val <= rv,
+                _ => false,
+            }
+        }
     }
 }
 
-fn check_bytes_comparison(
-    field_val: &Bytes,
-    rule_val: &Bytes,
-    op: &RuleOperator,
-) -> bool {
+fn check_bytes_comparison(field_val: &Bytes, rule_val: &RuleValue, op: &RuleOperator) -> bool {
     match op {
-        RuleOperator::Eq => field_val == rule_val,
-        RuleOperator::Neq => field_val != rule_val,
-        _ => false,
+        RuleOperator::In | RuleOperator::NotIn => {
+            let values = match rule_val {
+                RuleValue::Multiple(vals) => vals,
+                _ => return false,
+            };
+            let matched = values.iter().any(|v| *field_val == v);
+            matches!(op, RuleOperator::In) == matched
+        }
+        _ => {
+            let rv = match rule_val {
+                RuleValue::Single(b) => b,
+                _ => return false,
+            };
+            match op {
+                RuleOperator::Eq => field_val == rv,
+                RuleOperator::Neq => field_val != rv,
+                _ => false,
+            }
+        }
     }
 }
 
@@ -77,6 +115,10 @@ fn get_custom_field(record: &IdentityRecord, key: &Bytes) -> Option<Bytes> {
     None
 }
 
+/// Evaluate a single compliance rule against an identity record.
+///
+/// Returns `Ok(true)` if the rule passes (or is skipped due to action filter),
+/// `Ok(false)` if it fails, or `Err` if a required field is unavailable.
 fn evaluate_single_rule(
     env: &Env,
     record: &IdentityRecord,
@@ -139,6 +181,11 @@ fn evaluate_single_rule(
     Ok(result)
 }
 
+/// Evaluate all configured compliance rules against an identity record.
+///
+/// Iterates through `rules` and returns `Ok(())` only when every applicable
+/// rule passes. Returns `RuleEvaluationFailed` if any rule fails, or a
+/// domain-specific error if a required field is missing.
 pub fn evaluate_rules(
     env: &Env,
     record: &IdentityRecord,
@@ -158,6 +205,9 @@ pub fn evaluate_rules(
     Ok(())
 }
 
+/// Check whether an operation `amount` would exceed daily or monthly volume caps.
+///
+/// Limits of `0` are treated as unlimited.
 pub fn check_volume_limits(
     record: &IdentityRecord,
     amount: i128,
@@ -173,6 +223,9 @@ pub fn check_volume_limits(
     Ok(())
 }
 
+/// Check whether an identity's country code is in a restricted list.
+///
+/// Returns `JurisdictionRestricted` if the country code matches any entry.
 pub fn check_jurisdiction_restriction(
     record: &IdentityRecord,
     restricted: &Vec<Bytes>,

@@ -1,14 +1,16 @@
-use soroban_sdk::{contracterror, contracttype, Address, Vec};
+use soroban_sdk::{contracterror, contracttype, Address, Bytes, Vec};
 
+/// Geographic jurisdiction for identity classification.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Jurisdiction {
     Us,
     Eu,
     Uk,
-    Other(soroban_sdk::Bytes),
+    Other(Bytes),
 }
 
+/// KYC/onboarding status of an identity.
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum KycStatus {
@@ -19,6 +21,7 @@ pub enum KycStatus {
     Expired,
 }
 
+/// The type of compliance-checked action being performed.
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ComplianceAction {
@@ -30,6 +33,7 @@ pub enum ComplianceAction {
     Burn,
 }
 
+/// Comparison operator for a compliance rule.
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RuleOperator {
@@ -43,6 +47,7 @@ pub enum RuleOperator {
     NotIn,
 }
 
+/// The identity field a rule evaluates against.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RuleField {
@@ -54,25 +59,43 @@ pub enum RuleField {
     MonthlyVolume,
     TotalSupply,
     Balance,
-    Custom(soroban_sdk::Bytes),
+    Custom(Bytes),
 }
 
+/// A single value or set of values for a compliance rule.
+///
+/// `Single` is used with comparison operators (`Eq`, `Neq`, `Gt`, etc.).
+/// `Multiple` is used with set operators (`In`, `NotIn`) to test membership.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum RuleValue {
+    Single(Bytes),
+    Multiple(Vec<Bytes>),
+}
+
+/// A programmable compliance rule.
+///
+/// The rule is evaluated against a user's [`IdentityRecord`]. It only applies
+/// when `action_filter` matches the current action (or is `Any`).
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ComplianceRule {
     pub field: RuleField,
     pub operator: RuleOperator,
-    pub value: soroban_sdk::Bytes,
+    pub value: RuleValue,
     pub action_filter: ComplianceAction,
 }
 
+/// On-chain identity record returned by the identity registry.
+///
+/// Includes KYC status, jurisdiction, tier, tracked volumes, and custom fields.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IdentityRecord {
-    pub did: soroban_sdk::Bytes,
+    pub did: Bytes,
     pub kyc_status: KycStatus,
     pub jurisdiction: Jurisdiction,
-    pub country_code: soroban_sdk::Bytes,
+    pub country_code: Bytes,
     pub tier: u32,
     pub daily_volume: i128,
     pub monthly_volume: i128,
@@ -80,13 +103,17 @@ pub struct IdentityRecord {
     pub custom_fields: Vec<CustomField>,
 }
 
+/// A key-value pair for extensible identity metadata.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CustomField {
-    pub key: soroban_sdk::Bytes,
-    pub value: soroban_sdk::Bytes,
+    pub key: Bytes,
+    pub value: Bytes,
 }
 
+/// Configuration for a contract's compliance module.
+///
+/// Stored per-contract and governs all compliance checks.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ComplianceConfig {
@@ -97,9 +124,10 @@ pub struct ComplianceConfig {
     pub required_tier: u32,
     pub daily_volume_limit: i128,
     pub monthly_volume_limit: i128,
-    pub restricted_jurisdictions: Vec<soroban_sdk::Bytes>,
+    pub restricted_jurisdictions: Vec<Bytes>,
 }
 
+/// Errors returned by compliance checks and rule evaluation.
 #[contracterror]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ComplianceError {
@@ -111,4 +139,5 @@ pub enum ComplianceError {
     ContractPaused = 100,
     KycNotVerified = 101,
     InsufficientTier = 102,
+    VolumeUpdateFailed = 103,
 }

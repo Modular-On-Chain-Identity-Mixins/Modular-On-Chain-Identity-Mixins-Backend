@@ -1,7 +1,7 @@
 use soroban_compliance_kit::rule_engine;
 use soroban_compliance_kit::types::{
     ComplianceAction, ComplianceError, ComplianceRule, CustomField, IdentityRecord, Jurisdiction,
-    KycStatus, RuleField, RuleOperator,
+    KycStatus, RuleField, RuleOperator, RuleValue,
 };
 use soroban_sdk::{Bytes, Env, Vec};
 
@@ -24,6 +24,10 @@ fn identity_record(env: &Env, tier: u32, kyc: KycStatus, country: &[u8]) -> Iden
     }
 }
 
+fn single_rule_value(env: &Env, val: &[u8]) -> RuleValue {
+    RuleValue::Single(Bytes::from_slice(env, val))
+}
+
 #[test]
 fn rule_all_tiers_above_minimum() {
     let env = Env::default();
@@ -33,9 +37,7 @@ fn rule_all_tiers_above_minimum() {
         let record = identity_record(&env, tier, KycStatus::Verified, b"US");
         let rules: Vec<ComplianceRule> = Vec::new(&env);
 
-        let result = rule_engine::evaluate_rules(
-            &env, &record, &rules, &action, 1000, None, None,
-        );
+        let result = rule_engine::evaluate_rules(&env, &record, &rules, &action, 1000, None, None);
         assert!(result.is_ok(), "tier {} should pass empty rules", tier);
     }
 }
@@ -48,16 +50,14 @@ fn rule_tier_threshold_exact_match() {
     let rule = ComplianceRule {
         field: RuleField::Tier,
         operator: RuleOperator::Gte,
-        value: Bytes::from_slice(&env, &3u128.to_be_bytes()),
+        value: single_rule_value(&env, &3u128.to_be_bytes()),
         action_filter: ComplianceAction::Any,
     };
     let rules: Vec<ComplianceRule> = Vec::from_array(&env, [rule]);
 
     for tier in 1..=5u32 {
         let record = identity_record(&env, tier, KycStatus::Verified, b"US");
-        let result = rule_engine::evaluate_rules(
-            &env, &record, &rules, &action, 1000, None, None,
-        );
+        let result = rule_engine::evaluate_rules(&env, &record, &rules, &action, 1000, None, None);
         if tier >= 3 {
             assert!(result.is_ok(), "tier {} should pass Gte 3", tier);
         } else {
@@ -74,7 +74,7 @@ fn rule_jurisdiction_matching() {
     let rule = ComplianceRule {
         field: RuleField::Jurisdiction,
         operator: RuleOperator::Eq,
-        value: Bytes::from_slice(&env, b"US"),
+        value: single_rule_value(&env, b"US"),
         action_filter: ComplianceAction::Any,
     };
     let rules: Vec<ComplianceRule> = Vec::from_array(&env, [rule]);
@@ -90,7 +90,9 @@ fn rule_jurisdiction_matching() {
         last_tx_timestamp: 0,
         custom_fields: Vec::new(&env),
     };
-    assert!(rule_engine::evaluate_rules(&env, &us_record, &rules, &action, 1000, None, None).is_ok());
+    assert!(
+        rule_engine::evaluate_rules(&env, &us_record, &rules, &action, 1000, None, None).is_ok()
+    );
 
     let eu_record = IdentityRecord {
         did: Bytes::from_slice(&env, b"did:eu"),
@@ -118,7 +120,7 @@ fn rule_jurisdiction_other_matches() {
     let rule = ComplianceRule {
         field: RuleField::Jurisdiction,
         operator: RuleOperator::Eq,
-        value: china.clone(),
+        value: single_rule_value(&env, b"CN"),
         action_filter: ComplianceAction::Any,
     };
     let rules: Vec<ComplianceRule> = Vec::from_array(&env, [rule]);
@@ -150,7 +152,7 @@ fn rule_custom_field_matching() {
     let rule = ComplianceRule {
         field: RuleField::Custom(key),
         operator: RuleOperator::Eq,
-        value: val,
+        value: RuleValue::Single(val),
         action_filter: ComplianceAction::Any,
     };
     let rules: Vec<ComplianceRule> = Vec::from_array(&env, [rule]);
@@ -183,7 +185,7 @@ fn rule_custom_field_missing_returns_field_not_available() {
     let rule = ComplianceRule {
         field: RuleField::Custom(key),
         operator: RuleOperator::Eq,
-        value: Bytes::from_slice(&env, b"any"),
+        value: RuleValue::Single(Bytes::from_slice(&env, b"any")),
         action_filter: ComplianceAction::Any,
     };
     let rules: Vec<ComplianceRule> = Vec::from_array(&env, [rule]);
@@ -203,13 +205,13 @@ fn rule_balance_and_total_supply() {
     let balance_rule = ComplianceRule {
         field: RuleField::Balance,
         operator: RuleOperator::Gte,
-        value: Bytes::from_slice(&env, &1000i128.to_be_bytes()),
+        value: single_rule_value(&env, &1000i128.to_be_bytes()),
         action_filter: ComplianceAction::Any,
     };
     let supply_rule = ComplianceRule {
         field: RuleField::TotalSupply,
         operator: RuleOperator::Gte,
-        value: Bytes::from_slice(&env, &10000i128.to_be_bytes()),
+        value: single_rule_value(&env, &10000i128.to_be_bytes()),
         action_filter: ComplianceAction::Any,
     };
     let rules: Vec<ComplianceRule> = Vec::from_array(&env, [balance_rule, supply_rule]);
@@ -228,7 +230,13 @@ fn rule_balance_and_total_supply() {
     );
     assert!(
         rule_engine::evaluate_rules(
-            &env, &record, &rules, &action, 1000, Some(20000), Some(5000)
+            &env,
+            &record,
+            &rules,
+            &action,
+            1000,
+            Some(20000),
+            Some(5000)
         )
         .is_ok(),
         "with both params it should pass"
@@ -242,18 +250,35 @@ fn rule_action_filtering() {
     let rule = ComplianceRule {
         field: RuleField::Tier,
         operator: RuleOperator::Gte,
-        value: Bytes::from_slice(&env, &3u128.to_be_bytes()),
+        value: single_rule_value(&env, &3u128.to_be_bytes()),
         action_filter: ComplianceAction::Withdraw,
     };
     let rules: Vec<ComplianceRule> = Vec::from_array(&env, [rule]);
     let record = identity_record(&env, 1, KycStatus::Verified, b"US");
 
     assert!(
-        rule_engine::evaluate_rules(&env, &record, &rules, &ComplianceAction::Transfer, 1000, None, None).is_ok(),
+        rule_engine::evaluate_rules(
+            &env,
+            &record,
+            &rules,
+            &ComplianceAction::Transfer,
+            1000,
+            None,
+            None
+        )
+        .is_ok(),
         "rule scoped to Withdraw should not apply to Transfer"
     );
     assert_eq!(
-        rule_engine::evaluate_rules(&env, &record, &rules, &ComplianceAction::Withdraw, 1000, None, None),
+        rule_engine::evaluate_rules(
+            &env,
+            &record,
+            &rules,
+            &ComplianceAction::Withdraw,
+            1000,
+            None,
+            None
+        ),
         Err(ComplianceError::RuleEvaluationFailed),
         "rule scoped to Withdraw should apply to Withdraw"
     );
@@ -267,7 +292,7 @@ fn rule_kyc_status_comparison() {
     let rule = ComplianceRule {
         field: RuleField::KycStatus,
         operator: RuleOperator::Eq,
-        value: Bytes::from_slice(&env, &2u128.to_be_bytes()),
+        value: single_rule_value(&env, &2u128.to_be_bytes()),
         action_filter: ComplianceAction::Any,
     };
     let rules: Vec<ComplianceRule> = Vec::from_array(&env, [rule]);
@@ -284,7 +309,11 @@ fn rule_kyc_status_comparison() {
         let record = identity_record(&env, 1, item.0, b"US");
         let result = rule_engine::evaluate_rules(&env, &record, &rules, &action, 1000, None, None);
         if item.1 {
-            assert!(result.is_ok(), "{:?} should pass KycStatus == Verified", item.0);
+            assert!(
+                result.is_ok(),
+                "{:?} should pass KycStatus == Verified",
+                item.0
+            );
         } else {
             assert_eq!(
                 result,
@@ -351,7 +380,7 @@ fn country_code_inequality_rules() {
     let rule = ComplianceRule {
         field: RuleField::CountryCode,
         operator: RuleOperator::Neq,
-        value: Bytes::from_slice(&env, b"US"),
+        value: single_rule_value(&env, b"US"),
         action_filter: ComplianceAction::Any,
     };
     let rules: Vec<ComplianceRule> = Vec::from_array(&env, [rule]);
@@ -367,5 +396,60 @@ fn country_code_inequality_rules() {
     assert!(
         rule_engine::evaluate_rules(&env, &de_record, &rules, &action, 1000, None, None).is_ok(),
         "DE should pass Neq US"
+    );
+}
+
+#[test]
+fn rule_in_operator_multi_value() {
+    let env = Env::default();
+    let action = ComplianceAction::Transfer;
+
+    let us = Bytes::from_slice(&env, b"US");
+    let eu = Bytes::from_slice(&env, b"EU");
+    let uk = Bytes::from_slice(&env, b"UK");
+    let rule = ComplianceRule {
+        field: RuleField::CountryCode,
+        operator: RuleOperator::In,
+        value: RuleValue::Multiple(Vec::from_array(&env, [us, eu, uk])),
+        action_filter: ComplianceAction::Any,
+    };
+    let rules: Vec<ComplianceRule> = Vec::from_array(&env, [rule]);
+
+    let us_record = identity_record(&env, 1, KycStatus::Verified, b"US");
+    let de_record = identity_record(&env, 1, KycStatus::Verified, b"DE");
+
+    assert!(
+        rule_engine::evaluate_rules(&env, &us_record, &rules, &action, 1000, None, None).is_ok()
+    );
+    assert_eq!(
+        rule_engine::evaluate_rules(&env, &de_record, &rules, &action, 1000, None, None),
+        Err(ComplianceError::RuleEvaluationFailed)
+    );
+}
+
+#[test]
+fn rule_notin_operator_multi_value() {
+    let env = Env::default();
+    let action = ComplianceAction::Transfer;
+
+    let ir = Bytes::from_slice(&env, b"IR");
+    let kp = Bytes::from_slice(&env, b"KP");
+    let rule = ComplianceRule {
+        field: RuleField::CountryCode,
+        operator: RuleOperator::NotIn,
+        value: RuleValue::Multiple(Vec::from_array(&env, [ir, kp])),
+        action_filter: ComplianceAction::Any,
+    };
+    let rules: Vec<ComplianceRule> = Vec::from_array(&env, [rule]);
+
+    let us_record = identity_record(&env, 1, KycStatus::Verified, b"US");
+    let ir_record = identity_record(&env, 1, KycStatus::Verified, b"IR");
+
+    assert!(
+        rule_engine::evaluate_rules(&env, &us_record, &rules, &action, 1000, None, None).is_ok()
+    );
+    assert_eq!(
+        rule_engine::evaluate_rules(&env, &ir_record, &rules, &action, 1000, None, None),
+        Err(ComplianceError::RuleEvaluationFailed)
     );
 }

@@ -18,8 +18,7 @@ build-wasm:
 
 # Build with wasm32v1-none target directly (requires Rust 1.84+)
 build-wasm-raw:
-	cargo build --target wasm32v1-none --release -p identity-registry -p reference-defi-pool 2>/dev/null || \
-		echo "wasm32v1-none target may not have full std support. Use stellar contract build instead."
+	cargo build --target wasm32v1-none --release -p identity-registry -p reference-defi-pool
 
 # Run library tests (without testutils feature - works in all environments)
 test:

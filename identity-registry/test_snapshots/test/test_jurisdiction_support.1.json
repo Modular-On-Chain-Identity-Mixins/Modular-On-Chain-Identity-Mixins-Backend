@@ -16,9 +16,6 @@
               "function_name": "set_supported_jurisdictions",
               "args": [
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
-                },
-                {
                   "vec": [
                     {
                       "bytes": "5553"
