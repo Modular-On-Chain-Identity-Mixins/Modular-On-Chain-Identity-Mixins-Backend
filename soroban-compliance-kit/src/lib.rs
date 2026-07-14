@@ -16,3 +16,5 @@ pub mod macros;
 pub mod rule_engine;
 pub mod traits;
 pub mod types;
+
+pub use rule_engine::bytes_to_u128;

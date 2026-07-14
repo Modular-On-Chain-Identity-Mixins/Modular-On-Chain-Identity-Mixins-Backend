@@ -14,6 +14,9 @@ soroban-sdk.workspace = true
 # Pin to avoid ed25519-dalek v3 + rand_core 0.10 incompatibility with soroban-env-host's testutils
 ed25519-dalek.workspace = true
 
+[dev-dependencies]
+proptest = "1"
+
 [features]
 default = []
 testutils = ["soroban-sdk/testutils"]

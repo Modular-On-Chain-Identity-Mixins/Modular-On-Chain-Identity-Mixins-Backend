@@ -147,3 +147,38 @@ fn test_update_volume() {
     assert_eq!(record.daily_volume, 1500);
     assert_eq!(record.monthly_volume, 1500);
 }
+
+#[test]
+fn test_custom_fields() {
+    let (env, admin, _verifier, user) = setup_env();
+
+    let contract_id = env.register(IdentityRegistryContract, (&admin,));
+    let client = crate::contract::IdentityRegistryContractClient::new(&env, &contract_id);
+
+    let did = Bytes::from_slice(&env, b"did:example:custom");
+    let country_code = Bytes::from_slice(&env, b"US");
+
+    client.register(&user, &did, &Jurisdiction::Us, &country_code, &1u32);
+
+    let key = Bytes::from_slice(&env, b"risk_score");
+    let val = Bytes::from_slice(&env, b"low");
+    client.set_custom_field(&user, &key, &val);
+
+    let result = client.get_custom_field(&user, &key);
+    assert_eq!(result, Some(val));
+
+    let all_fields = client.get_custom_fields(&user);
+    assert_eq!(all_fields.len(), 1);
+
+    let record = client.get_identity_record(&user);
+    assert_eq!(record.custom_fields.len(), 1);
+    assert_eq!(
+        record.custom_fields.get(0).unwrap().value,
+        Bytes::from_slice(&env, b"low")
+    );
+
+    let empty_val = Bytes::from_slice(&env, b"");
+    client.set_custom_field(&user, &key, &empty_val);
+    let result = client.get_custom_field(&user, &key);
+    assert_eq!(result, None);
+}

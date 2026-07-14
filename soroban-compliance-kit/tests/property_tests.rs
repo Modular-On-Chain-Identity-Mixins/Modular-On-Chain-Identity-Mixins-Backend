@@ -453,3 +453,95 @@ fn rule_notin_operator_multi_value() {
         Err(ComplianceError::RuleEvaluationFailed)
     );
 }
+
+use proptest::prelude::*;
+
+proptest! {
+    #[test]
+    fn prop_bytes_to_u128_roundtrip(val: u128) {
+        let env = Env::default();
+        let bytes = Bytes::from_slice(&env, &val.to_be_bytes());
+        let decoded = soroban_compliance_kit::bytes_to_u128(&bytes);
+        assert_eq!(decoded, val);
+    }
+
+    #[test]
+    fn prop_bytes_to_u128_short_slice(high in 0u128..u128::MAX) {
+        let env = Env::default();
+        let full = high.to_be_bytes();
+        let short = &full[8..];
+        let bytes = Bytes::from_slice(&env, short);
+        let decoded = soroban_compliance_kit::bytes_to_u128(&bytes);
+        assert_eq!(decoded, high & 0x00000000_00000000_FFFFFFFF_FFFFFFFF);
+    }
+
+    #[test]
+    fn prop_volume_limits_not_exceeded(
+        daily_vol in 0i128..i128::MAX,
+        monthly_vol in 0i128..i128::MAX,
+        amount in 0i128..i128::MAX,
+    ) {
+        let env = Env::default();
+        let record = IdentityRecord {
+            did: Bytes::from_slice(&env, b"did:prop"),
+            kyc_status: KycStatus::Verified,
+            jurisdiction: Jurisdiction::Us,
+            country_code: Bytes::from_slice(&env, b"US"),
+            tier: 1,
+            daily_volume: daily_vol,
+            monthly_volume: monthly_vol,
+            last_tx_timestamp: 0,
+            custom_fields: Vec::new(&env),
+        };
+        let daily_limit = daily_vol.saturating_add(amount);
+        let monthly_limit = monthly_vol.saturating_add(amount);
+
+        let result = rule_engine::check_volume_limits(&record, amount, daily_limit, monthly_limit);
+        assert!(result.is_ok(), "volume within limits should pass");
+    }
+
+    #[test]
+    fn prop_volume_limits_zero_limit(
+        daily_vol in 0i128..i128::MAX,
+        monthly_vol in 0i128..i128::MAX,
+        amount in 0i128..i128::MAX,
+    ) {
+        let env = Env::default();
+        let record = IdentityRecord {
+            did: Bytes::from_slice(&env, b"did:prop"),
+            kyc_status: KycStatus::Verified,
+            jurisdiction: Jurisdiction::Us,
+            country_code: Bytes::from_slice(&env, b"US"),
+            tier: 1,
+            daily_volume: daily_vol,
+            monthly_volume: monthly_vol,
+            last_tx_timestamp: 0,
+            custom_fields: Vec::new(&env),
+        };
+
+        let result = rule_engine::check_volume_limits(&record, amount, 0, 0);
+        assert!(result.is_ok(), "limit of 0 should always pass");
+    }
+
+    #[test]
+    fn prop_jurisdiction_restriction_not_restricted(
+        country in "[A-Z]{2}",
+    ) {
+        let env = Env::default();
+        let restricted: Vec<Bytes> = Vec::new(&env);
+        let record = IdentityRecord {
+            did: Bytes::from_slice(&env, b"did:prop"),
+            kyc_status: KycStatus::Verified,
+            jurisdiction: Jurisdiction::Us,
+            country_code: Bytes::from_slice(&env, country.as_bytes()),
+            tier: 1,
+            daily_volume: 0,
+            monthly_volume: 0,
+            last_tx_timestamp: 0,
+            custom_fields: Vec::new(&env),
+        };
+
+        let result = rule_engine::check_jurisdiction_restriction(&record, &restricted);
+        assert!(result.is_ok(), "empty restricted list should always pass");
+    }
+}

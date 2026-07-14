@@ -5,7 +5,11 @@ use crate::types::{
     RuleField, RuleOperator, RuleValue,
 };
 
-fn bytes_to_u128(b: &Bytes) -> u128 {
+/// Decode a big-endian byte slice (up to 16 bytes) into a `u128`.
+///
+/// An empty slice returns 0. Leading zeros are assumed when fewer than
+/// 16 bytes are provided (compatible with Soroban's `i128`/`u128` XDR encoding).
+pub fn bytes_to_u128(b: &Bytes) -> u128 {
     let len = b.len() as usize;
     if len == 0 {
         return 0;
@@ -214,10 +218,10 @@ pub fn check_volume_limits(
     daily_limit: i128,
     monthly_limit: i128,
 ) -> Result<(), ComplianceError> {
-    if daily_limit > 0 && record.daily_volume + amount > daily_limit {
+    if daily_limit > 0 && record.daily_volume.saturating_add(amount) > daily_limit {
         return Err(ComplianceError::DailyVolumeExceeded);
     }
-    if monthly_limit > 0 && record.monthly_volume + amount > monthly_limit {
+    if monthly_limit > 0 && record.monthly_volume.saturating_add(amount) > monthly_limit {
         return Err(ComplianceError::MonthlyVolumeExceeded);
     }
     Ok(())

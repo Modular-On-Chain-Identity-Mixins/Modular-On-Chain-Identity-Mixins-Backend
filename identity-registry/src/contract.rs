@@ -2,7 +2,7 @@
 
 use soroban_sdk::{contract, contractimpl, symbol_short, Address, Bytes, Env, Vec};
 
-use soroban_compliance_kit::types::{Jurisdiction, KycStatus};
+use soroban_compliance_kit::types::{CustomField, Jurisdiction, KycStatus};
 
 use crate::storage::{self, IdentityData, VolumeData};
 
@@ -150,6 +150,42 @@ impl IdentityRegistryContract {
         user: Address,
     ) -> soroban_compliance_kit::types::IdentityRecord {
         storage::get_identity_record(&env, &user)
+    }
+
+    /// Set or remove a custom field on a user's identity.
+    ///
+    /// When `value` is `None` the field is removed; otherwise it is upserted.
+    /// Admin-only.
+    pub fn set_custom_field(env: Env, user: Address, key: Bytes, value: Bytes) {
+        let admin = storage::read_admin(&env);
+        admin.require_auth();
+
+        let is_empty = value.len() == 0;
+        let field = CustomField { key, value };
+        storage::set_custom_field(&env, &user, &field, !is_empty);
+    }
+
+    /// Get a single custom field value for a user.
+    pub fn get_custom_field(env: Env, user: Address, key: Bytes) -> Option<Bytes> {
+        let fields: Vec<CustomField> = env
+            .storage()
+            .instance()
+            .get(&crate::storage::DataKey::CustomFields(user))
+            .unwrap_or(Vec::new(&env));
+        for f in fields.iter() {
+            if f.key == key {
+                return Some(f.value);
+            }
+        }
+        None
+    }
+
+    /// Get all custom fields for a user.
+    pub fn get_custom_fields(env: Env, user: Address) -> Vec<CustomField> {
+        env.storage()
+            .instance()
+            .get(&crate::storage::DataKey::CustomFields(user))
+            .unwrap_or(Vec::new(&env))
     }
 
     /// Check whether a country code is in the supported jurisdictions list.

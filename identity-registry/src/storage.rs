@@ -1,6 +1,6 @@
 use soroban_sdk::{contracttype, symbol_short, Address, Bytes, Env, Vec};
 
-use soroban_compliance_kit::types::{IdentityRecord, Jurisdiction, KycStatus};
+use soroban_compliance_kit::types::{CustomField, IdentityRecord, Jurisdiction, KycStatus};
 
 #[contracttype]
 pub struct IdentityData {
@@ -22,6 +22,7 @@ pub struct VolumeData {
 pub enum DataKey {
     Identity(Address),
     Volume(Address),
+    CustomFields(Address),
 }
 
 pub fn has_identity(env: &Env, user: &Address) -> bool {
@@ -62,6 +63,11 @@ pub fn write_volume(env: &Env, user: &Address, volume: &VolumeData) {
 pub fn get_identity_record(env: &Env, user: &Address) -> IdentityRecord {
     let data = read_identity(env, user).expect("identity not registered");
     let vol = read_volume(env, user);
+    let custom_fields: Vec<CustomField> = env
+        .storage()
+        .instance()
+        .get(&DataKey::CustomFields(user.clone()))
+        .unwrap_or(Vec::new(env));
     IdentityRecord {
         did: data.did,
         kyc_status: data.kyc_status,
@@ -71,8 +77,34 @@ pub fn get_identity_record(env: &Env, user: &Address) -> IdentityRecord {
         daily_volume: vol.daily_volume,
         monthly_volume: vol.monthly_volume,
         last_tx_timestamp: vol.last_tx_timestamp,
-        custom_fields: Vec::new(env),
+        custom_fields,
     }
+}
+
+pub fn set_custom_field(env: &Env, user: &Address, field: &CustomField, add: bool) {
+    let fields: Vec<CustomField> = env
+        .storage()
+        .instance()
+        .get(&DataKey::CustomFields(user.clone()))
+        .unwrap_or(Vec::new(env));
+    let mut replaced = false;
+    let mut new_fields: Vec<CustomField> = Vec::new(env);
+    for f in fields.iter() {
+        if f.key == field.key {
+            if add {
+                new_fields.push_back(field.clone());
+            }
+            replaced = true;
+        } else {
+            new_fields.push_back(f);
+        }
+    }
+    if !replaced && add {
+        new_fields.push_back(field.clone());
+    }
+    env.storage()
+        .instance()
+        .set(&DataKey::CustomFields(user.clone()), &new_fields);
 }
 
 pub fn write_admin(env: &Env, admin: &Address) {

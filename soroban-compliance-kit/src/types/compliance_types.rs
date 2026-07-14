@@ -139,5 +139,4 @@ pub enum ComplianceError {
     ContractPaused = 100,
     KycNotVerified = 101,
     InsufficientTier = 102,
-    VolumeUpdateFailed = 103,
 }
