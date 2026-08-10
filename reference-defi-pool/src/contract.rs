@@ -304,15 +304,7 @@ impl ComplianceManager for DefiPoolContract {
         balance: Option<i128>,
     ) -> Result<(), ComplianceError> {
         let config = storage::read_compliance_config(env);
-        rule_engine::evaluate_rules(
-            env,
-            user,
-            &config.rules,
-            action,
-            amount,
-            total_supply,
-            balance,
-        )
+        rule_engine::evaluate_rules(env, user, &config.rules, action, amount, total_supply, balance)
     }
 }
 
@@ -356,12 +348,7 @@ impl DefiPoolContract {
             restricted_jurisdictions,
         );
 
-        PoolInitializedEvent {
-            token,
-            owner: admin,
-            identity_registry,
-        }
-        .publish(&env);
+        PoolInitializedEvent { token, owner: admin, identity_registry }.publish(&env);
     }
 
     /// Deposit tokens into the pool after compliance checks.
@@ -389,12 +376,7 @@ impl DefiPoolContract {
         let config = storage::read_compliance_config(&env);
         update_volume(&env, &config.identity_registry, &from, amount)?;
 
-        DepositEvent {
-            from,
-            amount,
-            total_liquidity: pool_config.total_liquidity,
-        }
-        .publish(&env);
+        DepositEvent { from, amount, total_liquidity: pool_config.total_liquidity }.publish(&env);
 
         Ok(())
     }
@@ -424,12 +406,7 @@ impl DefiPoolContract {
         let config = storage::read_compliance_config(&env);
         update_volume(&env, &config.identity_registry, &to, amount)?;
 
-        WithdrawEvent {
-            to,
-            amount,
-            total_liquidity: pool_config.total_liquidity,
-        }
-        .publish(&env);
+        WithdrawEvent { to, amount, total_liquidity: pool_config.total_liquidity }.publish(&env);
 
         Ok(())
     }

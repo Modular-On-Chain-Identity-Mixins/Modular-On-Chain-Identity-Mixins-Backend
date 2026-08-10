@@ -408,19 +408,13 @@ fn test_custom_fields() {
 
     let record = client.get_identity_record(&user);
     assert_eq!(record.custom_fields.len(), 1);
-    assert_eq!(
-        record.custom_fields.get(0).unwrap().value,
-        Bytes::from_slice(&env, b"low")
-    );
+    assert_eq!(record.custom_fields.get(0).unwrap().value, Bytes::from_slice(&env, b"low"));
 
     // Upserting the same key replaces it.
     let val2 = Bytes::from_slice(&env, b"high");
     client.set_custom_field(&user, &key, &val2);
     assert_eq!(client.get_custom_fields(&user).len(), 1);
-    assert_eq!(
-        client.get_custom_field(&user, &key),
-        Some(Bytes::from_slice(&env, b"high"))
-    );
+    assert_eq!(client.get_custom_field(&user, &key), Some(Bytes::from_slice(&env, b"high")));
 
     // An empty value removes the field.
     let empty_val = Bytes::from_slice(&env, b"");

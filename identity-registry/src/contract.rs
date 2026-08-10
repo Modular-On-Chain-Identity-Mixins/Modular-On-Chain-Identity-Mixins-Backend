@@ -132,21 +132,11 @@ impl IdentityRegistryContract {
             return Err(RegistryError::IdentityAlreadyRegistered);
         }
 
-        let data = IdentityData {
-            did,
-            kyc_status: KycStatus::Pending,
-            jurisdiction,
-            country_code,
-            tier,
-        };
+        let data =
+            IdentityData { did, kyc_status: KycStatus::Pending, jurisdiction, country_code, tier };
         storage::write_identity(&env, &user, &data);
 
-        RegisterEvent {
-            user,
-            kyc_status: data.kyc_status,
-            tier: data.tier,
-        }
-        .publish(&env);
+        RegisterEvent { user, kyc_status: data.kyc_status, tier: data.tier }.publish(&env);
         Ok(())
     }
 

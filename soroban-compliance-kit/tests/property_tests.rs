@@ -229,16 +229,8 @@ fn rule_balance_and_total_supply() {
         "without balance param it should error"
     );
     assert!(
-        rule_engine::evaluate_rules(
-            &env,
-            &record,
-            &rules,
-            &action,
-            1000,
-            Some(20000),
-            Some(5000)
-        )
-        .is_ok(),
+        rule_engine::evaluate_rules(&env, &record, &rules, &action, 1000, Some(20000), Some(5000))
+            .is_ok(),
         "with both params it should pass"
     );
 }
@@ -309,11 +301,7 @@ fn rule_kyc_status_comparison() {
         let record = identity_record(&env, 1, item.0, b"US");
         let result = rule_engine::evaluate_rules(&env, &record, &rules, &action, 1000, None, None);
         if item.1 {
-            assert!(
-                result.is_ok(),
-                "{:?} should pass KycStatus == Verified",
-                item.0
-            );
+            assert!(result.is_ok(), "{:?} should pass KycStatus == Verified", item.0);
         } else {
             assert_eq!(
                 result,
