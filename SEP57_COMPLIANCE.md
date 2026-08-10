@@ -79,9 +79,58 @@ Three gate macros map to these actions:
 - `compliance_deposit_check!` → `ComplianceAction::Deposit`
 - `compliance_withdraw_check!` → `ComplianceAction::Withdraw`
 
+## Contract Events (audit log)
+
+Every state change emits a typed `#[contractevent]` for on-chain auditability:
+
+| Contract | Event | Payload |
+|---|---|---|
+| registry | `RegisterEvent` | user, kyc_status, tier |
+| registry | `KycUpdatedEvent` | user, status |
+| registry | `VerifierAddedEvent` / `VerifierRemovedEvent` | verifier |
+| registry | `CallerAddedEvent` / `CallerRemovedEvent` | caller |
+| registry | `JurisdictionsUpdatedEvent` | jurisdictions |
+| registry | `VolumeUpdatedEvent` | user, daily_volume, monthly_volume |
+| pool | `PoolInitializedEvent` | token, owner, identity_registry |
+| pool | `DepositEvent` / `WithdrawEvent` | party, amount, total_liquidity |
+| pool | `TransferEvent` | from, to, amount |
+| pool | `PauseEvent` | paused |
+| pool | `RuleAddedEvent` / `RuleRemovedEvent` | index (+ rule) |
+
+## Typed Contract Errors
+
+Fallible entrypoints return `Result<_, ContractError>` instead of panicking:
+
+| Registry error | Meaning |
+|---|---|
+| `IdentityAlreadyRegistered` / `IdentityNotFound` | duplicate / missing identity |
+| `UnauthorizedVerifier` / `UnauthorizedCaller` | not on the respective allow-list |
+| `InvalidDid` / `InvalidCountryCode` / `InvalidTier` / `InvalidAmount` | input validation |
+| `DuplicateVerifier` / `VerifierNotFound` / `DuplicateCaller` / `CallerNotFound` | allow-list lifecycle |
+| `InvalidCustomFieldKey` | empty custom-field key |
+
+| Compliance error | Meaning |
+|---|---|
+| `RuleEvaluationFailed` / `FieldNotAvailable` | programmable rule gate |
+| `DailyVolumeExceeded` / `MonthlyVolumeExceeded` | volume cap hit |
+| `JurisdictionRestricted` | country code on the restricted list |
+| `AmountBelowMinimum` / `InvalidAmount` / `InsufficientLiquidity` | amount checks |
+| `RuleIndexOutOfBounds` | rule removal index |
+| `VolumeUpdateFailed` | registry rejected a volume update |
+| `ContractPaused` / `KycNotVerified` / `InsufficientTier` | compliance gate |
+
+## Access Control
+
+- **Admin** — owns the registry/pool; every privileged mutation calls
+  `require_auth()`.
+- **Verifiers** — admin-whitelisted; the only actors who may update KYC status.
+- **Authorized callers** — admin-whitelisted contracts (e.g. the pool) that may
+  update volume counters; the pool self-authorizes via
+  `Env::authorize_as_current_contract` when calling the registry.
+
 ## Deployed Contracts
 
 | Contract | Purpose |
 |---|---|
-| `identity-registry` | Stores identity records, manages KYC flow, verifier authorization |
+| `identity-registry` | Stores identity records, manages KYC flow, verifier/caller authorization, volume counters |
 | `reference-defi-pool` | Reference implementation of `ComplianceManager` — deposit/withdraw/transfer with full compliance enforcement |
