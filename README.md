@@ -240,4 +240,4 @@ For a full walkthrough of every contract entrypoint, see
 
 ## License
 
-MIT — see the workspace `Cargo.toml`. Built for the Stellar ecosystem.
+MIT — see [LICENSE](LICENSE). Built for the Stellar ecosystem.
