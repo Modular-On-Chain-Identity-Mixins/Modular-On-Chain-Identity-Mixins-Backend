@@ -439,6 +439,45 @@ fn test_custom_field_empty_key_rejected() {
 }
 
 #[test]
+fn test_verifier_views() {
+    let (env, admin, verifier, _user) = setup_env();
+
+    let contract_id = env.register(IdentityRegistryContract, (&admin,));
+    let client = crate::contract::IdentityRegistryContractClient::new(&env, &contract_id);
+
+    // The allow-list starts empty and reflects additions and removals.
+    assert_eq!(client.get_verifiers().len(), 0);
+
+    client.add_verifier(&verifier);
+    let verifiers = client.get_verifiers();
+    assert_eq!(verifiers.len(), 1);
+    assert_eq!(verifiers.get(0).unwrap(), verifier);
+
+    client.remove_verifier(&verifier);
+    assert_eq!(client.get_verifiers().len(), 0);
+}
+
+#[test]
+fn test_authorized_caller_views() {
+    let (env, admin, _verifier, _user) = setup_env();
+    let pool = Address::generate(&env);
+
+    let contract_id = env.register(IdentityRegistryContract, (&admin,));
+    let client = crate::contract::IdentityRegistryContractClient::new(&env, &contract_id);
+
+    // The allow-list starts empty and reflects additions and removals.
+    assert_eq!(client.get_authorized_callers().len(), 0);
+
+    client.add_authorized_caller(&pool);
+    let callers = client.get_authorized_callers();
+    assert_eq!(callers.len(), 1);
+    assert_eq!(callers.get(0).unwrap(), pool);
+
+    client.remove_authorized_caller(&pool);
+    assert_eq!(client.get_authorized_callers().len(), 0);
+}
+
+#[test]
 fn test_verify_unregistered_user_returns_false() {
     let (env, admin, _verifier, user) = setup_env();
 
