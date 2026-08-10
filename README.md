@@ -242,6 +242,7 @@ For a full walkthrough of every contract entrypoint, see
 
 MIT — see [LICENSE](LICENSE). Built for the Stellar ecosystem.
 
-## Security
+## Contributing
 
-See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and
+[SECURITY.md](SECURITY.md) for the vulnerability disclosure policy.
