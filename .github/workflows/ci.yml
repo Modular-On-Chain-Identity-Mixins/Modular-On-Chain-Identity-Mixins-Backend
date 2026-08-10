@@ -5,13 +5,70 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  quality:
+    name: Format · lint · docs
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      RUSTDOCFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+
+      # The pinned toolchain (channel/components/targets) lives in
+      # rust-toolchain.toml and is honoured by rustup on first use.
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry & build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      # `--features testutils` ensures the test modules (cfg-gated on that
+      # feature) are actually linted, not compiled away.
+      - name: Lint (clippy — warnings are errors)
+        run: cargo clippy --workspace --all-targets --features testutils -- -D warnings
+
+      - name: Build docs (warnings are errors)
+        run: cargo doc --workspace --no-deps
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry & build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Test (workspace, no features)
+        run: cargo test --locked --workspace
+
+      - name: Test (full suite with testutils)
+        run: cargo test --locked --workspace --features testutils
+
+  build-wasm:
+    name: Build WASM contracts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      RUSTFLAGS: -D warnings
     steps:
       - uses: actions/checkout@v4
 
@@ -20,14 +77,44 @@ jobs:
         with:
           targets: wasm32v1-none
 
-      - name: Build
-        run: cargo build --verbose
+      - name: Cache cargo registry & build artifacts
+        uses: Swatinem/rust-cache@v2
 
-      - name: Build (wasm target)
-        run: cargo build --target wasm32v1-none --verbose || echo "Wasm build requires nightly or stellar-cli; skipping"
+      - name: Build contracts for wasm32v1-none
+        run: cargo build --locked --target wasm32v1-none --release -p identity-registry -p reference-defi-pool
 
-      - name: Test
-        run: cargo test --features testutils --verbose
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: soroban-contracts
+          path: |
+            target/wasm32v1-none/release/identity_registry.wasm
+            target/wasm32v1-none/release/reference_defi_pool.wasm
+          if-no-files-found: error
 
-      - name: Check formatting
-        run: cargo fmt --check
+  coverage:
+    name: Coverage (≥80% lines)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry & build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Generate coverage report (80% line gate)
+        run: cargo llvm-cov --workspace --features testutils --fail-under-lines 80 --lcov --output-path lcov.info
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lcov-coverage
+          path: lcov.info
+          if-no-files-found: error

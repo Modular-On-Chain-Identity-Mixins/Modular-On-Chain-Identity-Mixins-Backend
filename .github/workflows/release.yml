@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & attach WASM artifacts
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32v1-none
+
+      - name: Cache cargo registry & build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build contracts for wasm32v1-none
+        run: cargo build --locked --target wasm32v1-none --release -p identity-registry -p reference-defi-pool
+
+      - name: Create GitHub release with WASM artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            target/wasm32v1-none/release/identity_registry.wasm
+            target/wasm32v1-none/release/reference_defi_pool.wasm
+          generate_release_notes: true

@@ -1,82 +1,83 @@
-.PHONY: all build build-wasm test test-all clean lint check
+.PHONY: all build build-wasm test test-all test-kit test-registry test-pool \
+        clean check lint fmt fmt-check doc coverage deploy init help
 
-# Default target
-all: build test
+# Default: everything a reviewer should run to validate the workspace.
+all: check lint test
 
-# Build the workspace (debug)
+# Build the workspace (debug).
 build:
-	cargo build
+	cargo build --workspace
 
-# Build for WebAssembly (Soroban contract target)
-# Uses Rust 1.81 or earlier with wasm32-unknown-unknown, or Rust 1.84+ with wasm32v1-none
-# The `stellar contract build` CLI handles toolchain selection automatically
+# Build the contracts to WebAssembly for the Soroban runtime.
+# The wasm32v1-none target is pinned in rust-toolchain.toml.
 build-wasm:
-	stellar contract build -p identity-registry -p reference-defi-pool 2>/dev/null || \
-		echo "stellar CLI not found. Install with: cargo install stellar-cli"
-	@ls -lh target/wasm32-unknown-unknown/release/*.wasm 2>/dev/null || \
-		echo "No WASM artifacts found. Use: stellar contract build --wasm <CRATE>"
-
-# Build with wasm32v1-none target directly (requires Rust 1.84+)
-build-wasm-raw:
 	cargo build --target wasm32v1-none --release -p identity-registry -p reference-defi-pool
+	@ls -lh target/wasm32v1-none/release/*.wasm
 
-# Run library tests (without testutils feature - works in all environments)
+# Run the full test suite (unit + integration + property tests).
 test:
-	cargo test -p soroban-compliance-kit --test property_tests
+	cargo test --workspace --features testutils
 
-# Run all tests including integration tests (requires testutils feature)
-test-all:
-	cargo test --features testutils -p soroban-compliance-kit -p identity-registry -p reference-defi-pool
+test-all: test
 
-# Run tests for a specific crate
+# Run tests for a single crate.
 test-kit:
-	cargo test --features testutils -p soroban-compliance-kit --test property_tests
+	cargo test -p soroban-compliance-kit --features testutils
 
 test-registry:
-	cargo test --features testutils -p identity-registry
+	cargo test -p identity-registry --features testutils
 
 test-pool:
-	cargo test --features testutils -p reference-defi-pool
+	cargo test -p reference-defi-pool --features testutils
 
-# Clean build artifacts
+# Clean build artifacts.
 clean:
 	cargo clean
 
-# Check for compilation errors
+# Compile-check everything (including tests and examples).
 check:
-	cargo check --workspace
+	cargo check --workspace --all-targets
 
-# Lint with clippy
+# Lint with clippy; warnings are treated as errors.
+# `--features testutils` ensures the cfg-gated test modules are linted too.
 lint:
-	cargo clippy --workspace -- -D warnings
+	cargo clippy --workspace --all-targets --features testutils -- -D warnings
 
-# Deploy contracts to a local/test network (requires Soroban CLI)
-deploy-registry:
-	soroban contract deploy \
-		--wasm target/wasm32-unknown-unknown/release/identity_registry.wasm
+# Format the whole workspace.
+fmt:
+	cargo fmt --all
 
-deploy-pool:
-	soroban contract deploy \
-		--wasm target/wasm32-unknown-unknown/release/reference_defi_pool.wasm
+fmt-check:
+	cargo fmt --all -- --check
 
-# Full deploy pipeline
-deploy: build-wasm deploy-registry deploy-pool
+# Build API documentation.
+doc:
+	cargo doc --workspace --no-deps
 
-# Print dependency tree
-deps:
-	cargo tree
+# Line coverage with a gate (requires: cargo install cargo-llvm-cov).
+coverage:
+	cargo llvm-cov --workspace --features testutils --fail-under-lines 80
 
-# Help
+# Deployment helpers (require the stellar CLI, see scripts/ and .env.example).
+deploy:
+	./scripts/deploy.sh
+
+init:
+	./scripts/init.sh
+
 help:
 	@echo "Targets:"
-	@echo "  build        - Build workspace (debug)"
-	@echo "  build-wasm   - Build contracts for WASM target"
-	@echo "  test         - Run library property tests"
-	@echo "  test-all     - Run all tests (with testutils)"
-	@echo "  test-kit     - Run compliance-kit tests"
-	@echo "  test-registry- Run identity-registry tests"
-	@echo "  test-pool    - Run defi-pool tests"
-	@echo "  clean        - Clean build artifacts"
-	@echo "  deploy       - WASM build + deploy contracts"
-	@echo "  lint         - Run clippy"
-	@echo "  deps         - Show dependency tree"
+	@echo "  all           - check + lint + test (default)"
+	@echo "  build         - cargo build (debug)"
+	@echo "  build-wasm    - build contracts for wasm32v1-none"
+	@echo "  test          - full test suite (workspace, testutils)"
+	@echo "  test-kit      - soroban-compliance-kit tests"
+	@echo "  test-registry - identity-registry tests"
+	@echo "  test-pool     - reference-defi-pool tests"
+	@echo "  check         - cargo check (all targets)"
+	@echo "  lint          - clippy with -D warnings"
+	@echo "  fmt / fmt-check - format / verify formatting"
+	@echo "  doc           - build API docs"
+	@echo "  coverage      - llvm-cov with a 80% line gate"
+	@echo "  deploy / init - run scripts/deploy.sh / scripts/init.sh"
+	@echo "  clean         - cargo clean"
