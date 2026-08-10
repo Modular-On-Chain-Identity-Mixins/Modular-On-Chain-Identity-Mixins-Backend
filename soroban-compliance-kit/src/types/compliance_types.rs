@@ -136,7 +136,15 @@ pub enum ComplianceError {
     MonthlyVolumeExceeded = 3,
     JurisdictionRestricted = 4,
     FieldNotAvailable = 5,
+    AmountBelowMinimum = 6,
+    InsufficientLiquidity = 7,
+    RuleIndexOutOfBounds = 8,
+    /// A registry cross-contract call failed while updating volume counters
+    /// (e.g. the registry rejected the caller as unauthorized).
+    VolumeUpdateFailed = 9,
     ContractPaused = 100,
     KycNotVerified = 101,
     InsufficientTier = 102,
+    /// The operation amount is not a positive value.
+    InvalidAmount = 103,
 }

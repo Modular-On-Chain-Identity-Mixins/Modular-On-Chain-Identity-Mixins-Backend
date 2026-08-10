@@ -27,10 +27,13 @@ pub trait ComplianceManager {
     fn set_config(env: &Env, config: ComplianceConfig);
 
     /// Append a new compliance rule (owner-only).
-    fn add_rule(env: &Env, rule: ComplianceRule);
+    fn add_rule(env: &Env, rule: ComplianceRule) -> Result<(), ComplianceError>;
 
     /// Remove a rule by index (owner-only).
-    fn remove_rule(env: &Env, index: u32);
+    ///
+    /// Fails with `ComplianceError::RuleIndexOutOfBounds` when `index` does not
+    /// reference an existing rule, so callers can never silently no-op.
+    fn remove_rule(env: &Env, index: u32) -> Result<(), ComplianceError>;
 
     /// Pause all compliance-checked operations (owner-only).
     fn pause(env: &Env);

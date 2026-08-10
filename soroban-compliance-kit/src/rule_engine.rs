@@ -16,61 +16,38 @@ pub fn bytes_to_u128(b: &Bytes) -> u128 {
     }
     let mut buf = [0u8; 16];
     let start = 16_usize.saturating_sub(len);
-    for i in 0..len {
+    for (i, byte) in b.iter().enumerate() {
         if start + i < 16 {
-            buf[start + i] = b.get(i as u32).unwrap_or(0);
+            buf[start + i] = byte;
         }
     }
     u128::from_be_bytes(buf)
 }
 
-fn check_numeric_comparison(field_val: u128, rule_val: &RuleValue, op: &RuleOperator) -> bool {
-    match op {
-        RuleOperator::In | RuleOperator::NotIn => {
-            let values = match rule_val {
-                RuleValue::Multiple(vals) => vals,
-                _ => return false,
-            };
-            let matched = values.iter().any(|v| field_val == bytes_to_u128(&v));
-            matches!(op, RuleOperator::In) == matched
-        }
-        _ => {
-            let rv = match rule_val {
-                RuleValue::Single(b) => bytes_to_u128(b),
-                _ => return false,
-            };
-            match op {
-                RuleOperator::Eq => field_val == rv,
-                RuleOperator::Neq => field_val != rv,
-                RuleOperator::Gt => field_val > rv,
-                RuleOperator::Lt => field_val < rv,
-                RuleOperator::Gte => field_val >= rv,
-                RuleOperator::Lte => field_val <= rv,
-                _ => false,
-            }
-        }
-    }
-}
-
-fn check_numeric_comparison_signed(
-    field_val: i128,
+/// Evaluate a numeric comparison (unsigned or signed) of `field_val` against
+/// a rule value. `parse` converts a rule value's bytes into the numeric type
+/// being compared, which keeps the signed/unsigned paths identical.
+fn check_numeric_comparison<T>(
+    field_val: T,
     rule_val: &RuleValue,
     op: &RuleOperator,
-) -> bool {
+    parse: impl Fn(&Bytes) -> T,
+) -> bool
+where
+    T: Copy + PartialOrd,
+{
     match op {
         RuleOperator::In | RuleOperator::NotIn => {
             let values = match rule_val {
                 RuleValue::Multiple(vals) => vals,
                 _ => return false,
             };
-            let matched = values
-                .iter()
-                .any(|v| field_val == bytes_to_u128(&v) as i128);
+            let matched = values.iter().any(|v| field_val == parse(&v));
             matches!(op, RuleOperator::In) == matched
         }
         _ => {
             let rv = match rule_val {
-                RuleValue::Single(b) => bytes_to_u128(b) as i128,
+                RuleValue::Single(b) => parse(b),
                 _ => return false,
             };
             match op {
@@ -128,7 +105,6 @@ fn evaluate_single_rule(
     record: &IdentityRecord,
     rule: &ComplianceRule,
     action: &ComplianceAction,
-    _amount: i128,
     total_supply: Option<i128>,
     balance: Option<i128>,
 ) -> Result<bool, ComplianceError> {
@@ -145,19 +121,26 @@ fn evaluate_single_rule(
                 KycStatus::Rejected => 3,
                 KycStatus::Expired => 4,
             };
-            check_numeric_comparison(val, &rule.value, &rule.operator)
+            check_numeric_comparison(val, &rule.value, &rule.operator, bytes_to_u128)
         }
-        RuleField::Tier => {
-            check_numeric_comparison(record.tier as u128, &rule.value, &rule.operator)
-        }
+        RuleField::Tier => check_numeric_comparison(
+            record.tier as u128,
+            &rule.value,
+            &rule.operator,
+            bytes_to_u128,
+        ),
         RuleField::CountryCode => {
             check_bytes_comparison(&record.country_code, &rule.value, &rule.operator)
         }
         RuleField::DailyVolume => {
-            check_numeric_comparison_signed(record.daily_volume, &rule.value, &rule.operator)
+            check_numeric_comparison(record.daily_volume, &rule.value, &rule.operator, |b| {
+                bytes_to_u128(b) as i128
+            })
         }
         RuleField::MonthlyVolume => {
-            check_numeric_comparison_signed(record.monthly_volume, &rule.value, &rule.operator)
+            check_numeric_comparison(record.monthly_volume, &rule.value, &rule.operator, |b| {
+                bytes_to_u128(b) as i128
+            })
         }
         RuleField::Jurisdiction => {
             let j_bytes = match &record.jurisdiction {
@@ -169,11 +152,15 @@ fn evaluate_single_rule(
             check_bytes_comparison(&j_bytes, &rule.value, &rule.operator)
         }
         RuleField::TotalSupply => match total_supply {
-            Some(ts) => check_numeric_comparison_signed(ts, &rule.value, &rule.operator),
+            Some(ts) => check_numeric_comparison(ts, &rule.value, &rule.operator, |b| {
+                bytes_to_u128(b) as i128
+            }),
             None => return Err(ComplianceError::FieldNotAvailable),
         },
         RuleField::Balance => match balance {
-            Some(b) => check_numeric_comparison_signed(b, &rule.value, &rule.operator),
+            Some(b) => check_numeric_comparison(b, &rule.value, &rule.operator, |bv| {
+                bytes_to_u128(bv) as i128
+            }),
             None => return Err(ComplianceError::FieldNotAvailable),
         },
         RuleField::Custom(key) => match get_custom_field(record, key) {
@@ -190,18 +177,21 @@ fn evaluate_single_rule(
 /// Iterates through `rules` and returns `Ok(())` only when every applicable
 /// rule passes. Returns `RuleEvaluationFailed` if any rule fails, or a
 /// domain-specific error if a required field is missing.
+///
+/// `_amount` is reserved for future amount-based rules and is currently
+/// unused; it is kept in the signature so the rule engine can evolve without
+/// breaking downstream callers.
 pub fn evaluate_rules(
     env: &Env,
     record: &IdentityRecord,
     rules: &Vec<ComplianceRule>,
     action: &ComplianceAction,
-    amount: i128,
+    _amount: i128,
     total_supply: Option<i128>,
     balance: Option<i128>,
 ) -> Result<(), ComplianceError> {
     for rule in rules.iter() {
-        let passed =
-            evaluate_single_rule(env, record, &rule, action, amount, total_supply, balance)?;
+        let passed = evaluate_single_rule(env, record, &rule, action, total_supply, balance)?;
         if !passed {
             return Err(ComplianceError::RuleEvaluationFailed);
         }

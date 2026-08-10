@@ -8,7 +8,7 @@
 //! ## Architecture
 //!
 //! - **types** — Data structures (`ComplianceRule`, `IdentityRecord`, etc.)
-//! - **traits** — `ComplianceManager` and `IdentityVerifier` interfaces
+//! - **traits** — the `ComplianceManager` interface for regulated contracts
 //! - **rule_engine** — Rule evaluation, volume checks, jurisdiction restrictions
 //! - **macros** — Convenience gates (`compliance_transfer_check!`, etc.)
 
