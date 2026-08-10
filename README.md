@@ -235,6 +235,11 @@ Tagging a version (`git tag v0.1.0 && git push --tags`) triggers
 `.github/workflows/release.yml`, which attaches the two `.wasm` artifacts to
 the GitHub release.
 
+**Dependency updates** — [Dependabot](.github/dependabot.yml) opens grouped
+PRs weekly: the `soroban-*` family stays in lockstep and non-breaking
+updates are batched. Every change to `Cargo.lock` is scanned by the
+`cargo-audit` CI job against the RustSec advisory DB (`make audit` locally).
+
 For a full walkthrough of every contract entrypoint, see
 [`docs/QUICKSTART.md`](docs/QUICKSTART.md).
 
