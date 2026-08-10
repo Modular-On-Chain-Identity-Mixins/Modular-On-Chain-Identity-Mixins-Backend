@@ -1,0 +1,12 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: modular-on-chain-identity-backend:dev
+    working_dir: /workspace
+    volumes:
+      # Mount the working tree so the container tests your current sources.
+      - .:/workspace
+    # `make check` (default) — override the command, e.g. `docker compose run --rm dev test`
+    command: ["check"]
