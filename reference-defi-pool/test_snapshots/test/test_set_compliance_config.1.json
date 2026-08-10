@@ -49,6 +49,7 @@
       ]
     ],
     [],
+    [],
     [
       [
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
@@ -56,59 +57,72 @@
           "function": {
             "contract_fn": {
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
-              "function_name": "add_compliance_rule",
+              "function_name": "set_compliance_config",
               "args": [
                 {
                   "map": [
                     {
                       "key": {
-                        "symbol": "action_filter"
+                        "symbol": "daily_volume_limit"
                       },
                       "val": {
-                        "vec": [
-                          {
-                            "symbol": "Any"
-                          }
-                        ]
+                        "i128": "42"
                       }
                     },
                     {
                       "key": {
-                        "symbol": "field"
+                        "symbol": "identity_registry"
                       },
                       "val": {
-                        "vec": [
-                          {
-                            "symbol": "Tier"
-                          }
-                        ]
+                        "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
                       }
                     },
                     {
                       "key": {
-                        "symbol": "operator"
+                        "symbol": "monthly_volume_limit"
                       },
                       "val": {
-                        "vec": [
-                          {
-                            "symbol": "Gte"
-                          }
-                        ]
+                        "i128": "10000000000000"
                       }
                     },
                     {
                       "key": {
-                        "symbol": "value"
+                        "symbol": "owner"
                       },
                       "val": {
-                        "vec": [
-                          {
-                            "symbol": "Single"
-                          },
-                          {
-                            "bytes": "000000000000000000000000000000"
-                          }
-                        ]
+                        "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "paused"
+                      },
+                      "val": {
+                        "bool": false
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "required_tier"
+                      },
+                      "val": {
+                        "u32": 1
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "restricted_jurisdictions"
+                      },
+                      "val": {
+                        "vec": []
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "rules"
+                      },
+                      "val": {
+                        "vec": []
                       }
                     }
                   ]
@@ -120,6 +134,7 @@
         }
       ]
     ],
+    [],
     []
   ],
   "ledger": {
@@ -279,7 +294,7 @@
                               "symbol": "daily_volume_limit"
                             },
                             "val": {
-                              "i128": "1000000000000"
+                              "i128": "42"
                             }
                           },
                           {
@@ -335,63 +350,7 @@
                               "symbol": "rules"
                             },
                             "val": {
-                              "vec": [
-                                {
-                                  "map": [
-                                    {
-                                      "key": {
-                                        "symbol": "action_filter"
-                                      },
-                                      "val": {
-                                        "vec": [
-                                          {
-                                            "symbol": "Any"
-                                          }
-                                        ]
-                                      }
-                                    },
-                                    {
-                                      "key": {
-                                        "symbol": "field"
-                                      },
-                                      "val": {
-                                        "vec": [
-                                          {
-                                            "symbol": "Tier"
-                                          }
-                                        ]
-                                      }
-                                    },
-                                    {
-                                      "key": {
-                                        "symbol": "operator"
-                                      },
-                                      "val": {
-                                        "vec": [
-                                          {
-                                            "symbol": "Gte"
-                                          }
-                                        ]
-                                      }
-                                    },
-                                    {
-                                      "key": {
-                                        "symbol": "value"
-                                      },
-                                      "val": {
-                                        "vec": [
-                                          {
-                                            "symbol": "Single"
-                                          },
-                                          {
-                                            "bytes": "000000000000000000000000000000"
-                                          }
-                                        ]
-                                      }
-                                    }
-                                  ]
-                                }
-                              ]
+                              "vec": []
                             }
                           }
                         ]

@@ -324,22 +324,14 @@
                   "storage": [
                     {
                       "key": {
-                        "symbol": "admin"
+                        "vec": [
+                          {
+                            "symbol": "Admin"
+                          }
+                        ]
                       },
                       "val": {
                         "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
-                      }
-                    },
-                    {
-                      "key": {
-                        "symbol": "verifiers"
-                      },
-                      "val": {
-                        "vec": [
-                          {
-                            "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
-                          }
-                        ]
                       }
                     },
                     {
@@ -405,6 +397,22 @@
                           }
                         ]
                       }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "Verifiers"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "vec": [
+                          {
+                            "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                          }
+                        ]
+                      }
                     }
                   ]
                 }
@@ -432,7 +440,11 @@
                   "storage": [
                     {
                       "key": {
-                        "symbol": "compcfg"
+                        "vec": [
+                          {
+                            "symbol": "ComplianceConfig"
+                          }
+                        ]
                       },
                       "val": {
                         "map": [
@@ -505,7 +517,11 @@
                     },
                     {
                       "key": {
-                        "symbol": "poolcfg"
+                        "vec": [
+                          {
+                            "symbol": "PoolConfig"
+                          }
+                        ]
                       },
                       "val": {
                         "map": [
