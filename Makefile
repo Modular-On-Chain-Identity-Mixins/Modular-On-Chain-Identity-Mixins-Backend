@@ -1,5 +1,5 @@
 .PHONY: all build build-wasm test test-all test-kit test-registry test-pool \
-        clean check lint fmt fmt-check doc coverage deploy init help
+        clean check lint fmt fmt-check doc coverage audit deploy init help
 
 # Default: everything a reviewer should run to validate the workspace.
 all: check lint test
@@ -58,6 +58,10 @@ doc:
 coverage:
 	cargo llvm-cov --workspace --features testutils --fail-under-lines 80
 
+# Scan the dependency tree for known vulnerabilities (RustSec advisory DB).
+audit:
+	cargo audit
+
 # Deployment helpers (require the stellar CLI, see scripts/ and .env.example).
 deploy:
 	./scripts/deploy.sh
@@ -79,5 +83,6 @@ help:
 	@echo "  fmt / fmt-check - format / verify formatting"
 	@echo "  doc           - build API docs"
 	@echo "  coverage      - llvm-cov with a 80% line gate"
+	@echo "  audit         - cargo-audit dependency scan (RustSec DB)"
 	@echo "  deploy / init - run scripts/deploy.sh / scripts/init.sh"
 	@echo "  clean         - cargo clean"
