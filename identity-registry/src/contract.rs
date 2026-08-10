@@ -227,6 +227,16 @@ impl IdentityRegistryContract {
         Ok(())
     }
 
+    /// View the current verifier allow-list (who may update KYC status).
+    pub fn get_verifiers(env: Env) -> Vec<Address> {
+        storage::read_verifiers(&env)
+    }
+
+    /// View the current authorized-caller allow-list (who may update volume).
+    pub fn get_authorized_callers(env: Env) -> Vec<Address> {
+        storage::read_authorized_callers(&env)
+    }
+
     /// Set the list of supported jurisdictions (country codes). Admin-only.
     pub fn set_supported_jurisdictions(env: Env, jurisdictions: Vec<Bytes>) {
         let admin = storage::read_admin(&env);

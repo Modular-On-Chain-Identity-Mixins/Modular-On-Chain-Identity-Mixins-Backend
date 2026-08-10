@@ -143,7 +143,7 @@ pub fn read_admin(env: &Env) -> Address {
 // Verifiers
 // ---------------------------------------------------------------------------
 
-fn read_verifiers(env: &Env) -> Vec<Address> {
+pub fn read_verifiers(env: &Env) -> Vec<Address> {
     env.storage().instance().get(&DataKey::Verifiers).unwrap_or(Vec::new(env))
 }
 
@@ -173,7 +173,7 @@ pub fn remove_verifier(env: &Env, verifier: &Address) {
 // Authorized callers (e.g. pool contracts allowed to update volume)
 // ---------------------------------------------------------------------------
 
-fn read_authorized_callers(env: &Env) -> Vec<Address> {
+pub fn read_authorized_callers(env: &Env) -> Vec<Address> {
     env.storage().instance().get(&DataKey::AuthorizedCallers).unwrap_or(Vec::new(env))
 }
 
