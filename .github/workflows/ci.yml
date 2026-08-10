@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Weekly dependency audit only — the other jobs skip scheduled runs.
+  schedule:
+    - cron: '27 3 * * 1'
   workflow_dispatch:
 
 env:
@@ -13,6 +16,7 @@ env:
 jobs:
   quality:
     name: Format · lint · docs
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -44,6 +48,7 @@ jobs:
 
   test:
     name: Tests
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -64,6 +69,7 @@ jobs:
 
   build-wasm:
     name: Build WASM contracts
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -94,7 +100,31 @@ jobs:
 
   coverage:
     name: Coverage (≥80% lines)
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@cargo-audit
+
+      # Fails the run when Cargo.lock contains a dependency with a known
+      # vulnerability (RustSec advisory DB). Runs on every push/PR and
+      # weekly on the schedule trigger.
+      - name: Audit dependencies
+        run: cargo audit
     permissions:
       contents: read
     steps:
