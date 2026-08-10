@@ -28,10 +28,7 @@ pub fn write_pool_config(env: &Env, config: &PoolConfig) {
 /// `__constructor` runs exactly once at deployment, so this is unreachable in
 /// practice.
 pub fn read_pool_config(env: &Env) -> PoolConfig {
-    env.storage()
-        .instance()
-        .get(&DataKey::PoolConfig)
-        .expect("pool not initialized")
+    env.storage().instance().get(&DataKey::PoolConfig).expect("pool not initialized")
 }
 
 pub fn has_pool_config(env: &Env) -> bool {
@@ -39,9 +36,7 @@ pub fn has_pool_config(env: &Env) -> bool {
 }
 
 pub fn write_compliance_config(env: &Env, config: &ComplianceConfig) {
-    env.storage()
-        .instance()
-        .set(&DataKey::ComplianceConfig, config);
+    env.storage().instance().set(&DataKey::ComplianceConfig, config);
 }
 
 /// Read the compliance configuration.
@@ -50,10 +45,7 @@ pub fn write_compliance_config(env: &Env, config: &ComplianceConfig) {
 /// `__constructor` runs exactly once at deployment, so this is unreachable in
 /// practice.
 pub fn read_compliance_config(env: &Env) -> ComplianceConfig {
-    env.storage()
-        .instance()
-        .get(&DataKey::ComplianceConfig)
-        .expect("compliance not initialized")
+    env.storage().instance().get(&DataKey::ComplianceConfig).expect("compliance not initialized")
 }
 
 pub fn has_compliance_config(env: &Env) -> bool {

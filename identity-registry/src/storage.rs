@@ -37,21 +37,15 @@ pub enum DataKey {
 // ---------------------------------------------------------------------------
 
 pub fn has_identity(env: &Env, user: &Address) -> bool {
-    env.storage()
-        .instance()
-        .has(&DataKey::Identity(user.clone()))
+    env.storage().instance().has(&DataKey::Identity(user.clone()))
 }
 
 pub fn write_identity(env: &Env, user: &Address, data: &IdentityData) {
-    env.storage()
-        .instance()
-        .set(&DataKey::Identity(user.clone()), data);
+    env.storage().instance().set(&DataKey::Identity(user.clone()), data);
 }
 
 pub fn read_identity(env: &Env, user: &Address) -> Option<IdentityData> {
-    env.storage()
-        .instance()
-        .get(&DataKey::Identity(user.clone()))
+    env.storage().instance().get(&DataKey::Identity(user.clone()))
 }
 
 // ---------------------------------------------------------------------------
@@ -59,20 +53,15 @@ pub fn read_identity(env: &Env, user: &Address) -> Option<IdentityData> {
 // ---------------------------------------------------------------------------
 
 pub fn read_volume(env: &Env, user: &Address) -> VolumeData {
-    env.storage()
-        .instance()
-        .get(&DataKey::Volume(user.clone()))
-        .unwrap_or(VolumeData {
-            daily_volume: 0,
-            monthly_volume: 0,
-            last_tx_timestamp: 0,
-        })
+    env.storage().instance().get(&DataKey::Volume(user.clone())).unwrap_or(VolumeData {
+        daily_volume: 0,
+        monthly_volume: 0,
+        last_tx_timestamp: 0,
+    })
 }
 
 pub fn write_volume(env: &Env, user: &Address, volume: &VolumeData) {
-    env.storage()
-        .instance()
-        .set(&DataKey::Volume(user.clone()), volume);
+    env.storage().instance().set(&DataKey::Volume(user.clone()), volume);
 }
 
 // ---------------------------------------------------------------------------
@@ -105,10 +94,7 @@ pub fn get_identity_record(env: &Env, user: &Address) -> Option<IdentityRecord> 
 // ---------------------------------------------------------------------------
 
 pub fn read_custom_fields(env: &Env, user: &Address) -> Vec<CustomField> {
-    env.storage()
-        .instance()
-        .get(&DataKey::CustomFields(user.clone()))
-        .unwrap_or(Vec::new(env))
+    env.storage().instance().get(&DataKey::CustomFields(user.clone())).unwrap_or(Vec::new(env))
 }
 
 /// Upsert (`add == true`) or remove (`add == false`) a custom field.
@@ -129,9 +115,7 @@ pub fn set_custom_field(env: &Env, user: &Address, field: &CustomField, add: boo
     if !replaced && add {
         new_fields.push_back(field.clone());
     }
-    env.storage()
-        .instance()
-        .set(&DataKey::CustomFields(user.clone()), &new_fields);
+    env.storage().instance().set(&DataKey::CustomFields(user.clone()), &new_fields);
 }
 
 // ---------------------------------------------------------------------------
@@ -152,10 +136,7 @@ pub fn has_admin(env: &Env) -> bool {
 /// `__constructor` runs exactly once at deployment, so this is unreachable in
 /// practice.
 pub fn read_admin(env: &Env) -> Address {
-    env.storage()
-        .instance()
-        .get(&DataKey::Admin)
-        .expect("admin not set")
+    env.storage().instance().get(&DataKey::Admin).expect("admin not set")
 }
 
 // ---------------------------------------------------------------------------
@@ -163,10 +144,7 @@ pub fn read_admin(env: &Env) -> Address {
 // ---------------------------------------------------------------------------
 
 fn read_verifiers(env: &Env) -> Vec<Address> {
-    env.storage()
-        .instance()
-        .get(&DataKey::Verifiers)
-        .unwrap_or(Vec::new(env))
+    env.storage().instance().get(&DataKey::Verifiers).unwrap_or(Vec::new(env))
 }
 
 pub fn is_verifier(env: &Env, verifier: &Address) -> bool {
@@ -177,9 +155,7 @@ pub fn is_verifier(env: &Env, verifier: &Address) -> bool {
 pub fn add_verifier(env: &Env, verifier: &Address) {
     let mut verifiers = read_verifiers(env);
     verifiers.push_back(verifier.clone());
-    env.storage()
-        .instance()
-        .set(&DataKey::Verifiers, &verifiers);
+    env.storage().instance().set(&DataKey::Verifiers, &verifiers);
 }
 
 pub fn remove_verifier(env: &Env, verifier: &Address) {
@@ -190,9 +166,7 @@ pub fn remove_verifier(env: &Env, verifier: &Address) {
             remaining.push_back(v);
         }
     }
-    env.storage()
-        .instance()
-        .set(&DataKey::Verifiers, &remaining);
+    env.storage().instance().set(&DataKey::Verifiers, &remaining);
 }
 
 // ---------------------------------------------------------------------------
@@ -200,10 +174,7 @@ pub fn remove_verifier(env: &Env, verifier: &Address) {
 // ---------------------------------------------------------------------------
 
 fn read_authorized_callers(env: &Env) -> Vec<Address> {
-    env.storage()
-        .instance()
-        .get(&DataKey::AuthorizedCallers)
-        .unwrap_or(Vec::new(env))
+    env.storage().instance().get(&DataKey::AuthorizedCallers).unwrap_or(Vec::new(env))
 }
 
 pub fn is_authorized_caller(env: &Env, caller: &Address) -> bool {
@@ -214,9 +185,7 @@ pub fn is_authorized_caller(env: &Env, caller: &Address) -> bool {
 pub fn add_authorized_caller(env: &Env, caller: &Address) {
     let mut callers = read_authorized_callers(env);
     callers.push_back(caller.clone());
-    env.storage()
-        .instance()
-        .set(&DataKey::AuthorizedCallers, &callers);
+    env.storage().instance().set(&DataKey::AuthorizedCallers, &callers);
 }
 
 pub fn remove_authorized_caller(env: &Env, caller: &Address) {
@@ -227,9 +196,7 @@ pub fn remove_authorized_caller(env: &Env, caller: &Address) {
             remaining.push_back(c);
         }
     }
-    env.storage()
-        .instance()
-        .set(&DataKey::AuthorizedCallers, &remaining);
+    env.storage().instance().set(&DataKey::AuthorizedCallers, &remaining);
 }
 
 // ---------------------------------------------------------------------------
@@ -237,16 +204,11 @@ pub fn remove_authorized_caller(env: &Env, caller: &Address) {
 // ---------------------------------------------------------------------------
 
 pub fn set_supported_jurisdictions(env: &Env, jurisdictions: Vec<Bytes>) {
-    env.storage()
-        .instance()
-        .set(&DataKey::SupportedJurisdictions, &jurisdictions);
+    env.storage().instance().set(&DataKey::SupportedJurisdictions, &jurisdictions);
 }
 
 pub fn is_jurisdiction_supported(env: &Env, country_code: &Bytes) -> bool {
-    let jurisdictions: Vec<Bytes> = env
-        .storage()
-        .instance()
-        .get(&DataKey::SupportedJurisdictions)
-        .unwrap_or(Vec::new(env));
+    let jurisdictions: Vec<Bytes> =
+        env.storage().instance().get(&DataKey::SupportedJurisdictions).unwrap_or(Vec::new(env));
     jurisdictions.iter().any(|j| j == *country_code)
 }
