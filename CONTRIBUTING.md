@@ -97,6 +97,9 @@ errors instead of panics on user-supplied input, overflow safety
 
 ## Code style notes
 
+- Editor/IDE defaults are pinned in [`.editorconfig`](.editorconfig)
+  (UTF-8, LF, indentation per file type) — most editors pick it up
+  automatically.
 - Formatting is pinned in `rustfmt.toml` (import grouping enforced).
 - Prefer typed `#[contractevent]`s over ad-hoc symbol events.
 - Never `expect`/`panic` on user-supplied input — return a typed error.
