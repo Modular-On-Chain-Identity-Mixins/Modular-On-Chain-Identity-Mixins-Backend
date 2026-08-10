@@ -1,1 +1,18 @@
+# Rust / Cargo build artifacts
 target/
+
+# Environment / secrets — NEVER commit these
+.env
+.env.local
+*.pem
+
+# Editor / OS cruft
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Coverage output
+coverage/
+lcov.info
+*.profraw

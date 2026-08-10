@@ -1,0 +1,10 @@
+# Pinned toolchain for reproducible builds.
+#
+# - `channel`: stable Rust with a minimum version satisfying soroban-sdk's MSRV.
+# - `targets`: `wasm32v1-none` is required to compile contracts to WebAssembly.
+#
+# Update deliberately and commit the change together with any SDK upgrade.
+[toolchain]
+channel = "stable"
+components = ["clippy", "rustfmt"]
+targets = ["wasm32v1-none"]

@@ -10,9 +10,12 @@ members = [
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/anomalyco/Modular-On-Chain-Identity-Mixins-Backend"
+authors = ["Modular On-Chain Identity Mixins Contributors"]
+description = "Granular, programmable compliance for Stellar Soroban: SEP-57 / ERC-3643 (T-REX) on-chain identity mixins, identity registry, and a reference DeFi pool."
+repository = "https://github.com/Modular-On-Chain-Identity-Mixins/Modular-On-Chain-Identity-Mixins-Backend"
+keywords = ["stellar", "soroban", "compliance", "identity", "se-57", "erc-3643"]
+categories = ["cryptography::cryptocurrencies", "no-std"]
 
 [workspace.dependencies]
-soroban-sdk = "27.0.0"
+soroban-sdk = "27.0.5"
 soroban-compliance-kit = { path = "soroban-compliance-kit" }
-ed25519-dalek = "=2.2.0"
