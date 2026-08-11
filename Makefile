@@ -1,5 +1,5 @@
 .PHONY: all build build-wasm test test-all test-kit test-registry test-pool \
-        clean check lint fmt fmt-check doc coverage audit deploy init help
+        clean check lint fmt fmt-check doc coverage audit verify deploy init help
 
 # Default: everything a reviewer should run to validate the workspace.
 all: check lint test
@@ -62,6 +62,19 @@ coverage:
 audit:
 	cargo audit
 
+# Full CI parity: runs exactly what .github/workflows/ci.yml runs, locally.
+# Green here means green in GitHub Actions — run before pushing.
+# Requires cargo-llvm-cov and cargo-audit (see the `coverage`/`audit` targets).
+verify:
+	cargo fmt --all -- --check
+	cargo clippy --workspace --all-targets --features testutils -- -D warnings
+	cargo test --locked --workspace
+	cargo test --locked --workspace --features testutils
+	cargo build --locked --target wasm32v1-none --release -p identity-registry -p reference-defi-pool
+	RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
+	cargo llvm-cov --workspace --features testutils --fail-under-lines 80
+	cargo audit
+
 # Deployment helpers (require the stellar CLI, see scripts/ and .env.example).
 deploy:
 	./scripts/deploy.sh
@@ -84,5 +97,6 @@ help:
 	@echo "  doc           - build API docs"
 	@echo "  coverage      - llvm-cov with a 80% line gate"
 	@echo "  audit         - cargo-audit dependency scan (RustSec DB)"
+	@echo "  verify        - full CI parity gate (fmt, lint, tests, wasm, doc, coverage, audit)"
 	@echo "  deploy / init - run scripts/deploy.sh / scripts/init.sh"
 	@echo "  clean         - cargo clean"

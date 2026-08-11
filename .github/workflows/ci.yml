@@ -10,6 +10,16 @@ on:
     - cron: '27 3 * * 1'
   workflow_dispatch:
 
+# Cancel superseded runs on the same ref so long test runs don't pile up.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least-privilege default for every job; jobs that upload artifacts or
+# release only need their explicitly declared permissions.
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -18,12 +28,10 @@ jobs:
     name: Format · lint · docs
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     env:
       RUSTDOCFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The pinned toolchain (channel/components/targets) lives in
       # rust-toolchain.toml and is honoured by rustup on first use.
@@ -50,10 +58,8 @@ jobs:
     name: Tests
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -71,12 +77,10 @@ jobs:
     name: Build WASM contracts
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     env:
       RUSTFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -90,7 +94,7 @@ jobs:
         run: cargo build --locked --target wasm32v1-none --release -p identity-registry -p reference-defi-pool
 
       - name: Upload WASM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: soroban-contracts
           path: |
@@ -102,33 +106,8 @@ jobs:
     name: Coverage (≥80% lines)
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-
-  audit:
-    name: Dependency audit
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: Swatinem/rust-cache@v2
-
-      - name: Install cargo-audit
-        uses: taiki-e/install-action@cargo-audit
-
-      # Fails the run when Cargo.lock contains a dependency with a known
-      # vulnerability (RustSec advisory DB). Runs on every push/PR and
-      # weekly on the schedule trigger.
-      - name: Audit dependencies
-        run: cargo audit
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -139,12 +118,35 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
+      # Hard gate: the suite currently measures ~94% line coverage.
       - name: Generate coverage report (80% line gate)
         run: cargo llvm-cov --workspace --features testutils --fail-under-lines 80 --lcov --output-path lcov.info
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lcov-coverage
           path: lcov.info
           if-no-files-found: error
+
+  audit:
+    name: Dependency audit
+    # No `if` guard: this job also runs on the weekly schedule trigger.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry & build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@cargo-audit
+
+      # Fails the run when Cargo.lock contains a dependency with a known
+      # vulnerability (RustSec advisory DB). Runs on every push/PR and
+      # weekly on the schedule trigger.
+      - name: Audit dependencies
+        run: cargo audit

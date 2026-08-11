@@ -76,7 +76,8 @@ docker compose run --rm dev test
 
 | Goal | Command |
 |---|---|
-| Full validation gate | `make all` |
+| Full validation gate (fast: check + lint + tests) | `make all` |
+| Full CI parity gate (every CI check, locally) | `make verify` |
 | Build contracts to WASM | `make build-wasm` |
 | Run all tests (unit + integration + property) | `make test` |
 | Test a single crate | `make test-kit` / `test-registry` / `test-pool` |
@@ -84,15 +85,23 @@ docker compose run --rm dev test
 | Verify formatting | `make fmt-check` |
 | Build API docs | `make doc` |
 | Line coverage (80% gate) | `make coverage` |
+| Dependency audit (RustSec DB) | `make audit` |
 
-Under the hood the same commands are:
+`make verify` runs the *exact* same sequence as `.github/workflows/ci.yml`
+(fmt, clippy with `-D warnings`, tests, WASM build, docs, coverage gate,
+dependency audit) — green locally means green in GitHub Actions.
+
+The fast gate (`make all`) runs:
 
 ```bash
 cargo check --workspace --all-targets
-cargo clippy --workspace --all-targets -- -D warnings
+cargo clippy --workspace --all-targets --features testutils -- -D warnings
 cargo test --workspace --features testutils
-cargo build --target wasm32v1-none --release -p identity-registry -p reference-defi-pool
 ```
+
+and `make verify` extends that to the full CI sequence (`--locked` builds,
+WASM build, docs with `RUSTDOCFLAGS=-D warnings`, the 80% coverage gate and
+`cargo audit`).
 
 ## Testing
 
@@ -114,9 +123,9 @@ Coverage (requires `cargo install cargo-llvm-cov`):
 make coverage
 ```
 
-Measured on the current test suite: **~94% line coverage** (registry contract
-99%, pool contract 90%, rule engine 84%) — comfortably above the 80% gate
-that `make coverage` enforces.
+Measured on the current test suite: **~94% line coverage** (registry 99%,
+pool 89%, rule engine 84%) — comfortably above the 80% gate that
+`make coverage` enforces.
 
 ## Environment variables
 
@@ -223,13 +232,17 @@ See [SEP57_COMPLIANCE.md](SEP57_COMPLIANCE.md) for the full standards mapping.
 
 ## CI/CD
 
-`.github/workflows/ci.yml` runs on every push/PR to `main`:
+`.github/workflows/ci.yml` runs on every push/PR to `main` (and the audit job
+weekly on a schedule):
 
 1. **quality** — `cargo fmt --check`, `cargo clippy -D warnings` (incl. tests), `cargo doc`
 2. **test** — full workspace test suite with `testutils`
 3. **build-wasm** — release WASM build for `wasm32v1-none` (hard gate) and
    artifact upload
 4. **coverage** — `cargo llvm-cov` with an 80% line gate + lcov artifact
+5. **audit** — `cargo audit` against the RustSec advisory DB
+
+Run the identical gate locally with **`make verify`** before pushing.
 
 Tagging a version (`git tag v0.1.0 && git push --tags`) triggers
 `.github/workflows/release.yml`, which attaches the two `.wasm` artifacts to

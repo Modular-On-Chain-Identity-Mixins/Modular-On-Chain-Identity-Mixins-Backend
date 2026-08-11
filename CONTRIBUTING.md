@@ -48,8 +48,10 @@ Every pull request runs the full CI matrix. In order of failure likelihood:
 4. `cargo build --locked --target wasm32v1-none --release -p identity-registry -p reference-defi-pool`.
 5. `cargo doc --workspace --no-deps` with `RUSTDOCFLAGS=-D warnings`.
 6. `cargo llvm-cov --workspace --features testutils --fail-under-lines 80`.
+7. `cargo audit` — RustSec advisory scan of `Cargo.lock`.
 
-If any of these fail, CI is red — fix locally before asking for review.
+**Run `make verify`** — it executes this exact sequence locally. If any of
+these fail, CI is red — fix locally before asking for review.
 
 ## Branch naming
 

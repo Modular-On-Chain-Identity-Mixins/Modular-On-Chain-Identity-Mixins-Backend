@@ -1,3 +1,7 @@
+//! Rule evaluation, volume-cap and jurisdiction checks for the compliance
+//! module. All functions are pure with respect to the [`Env`] and an
+//! [`IdentityRecord`], making them unit-testable without a full contract.
+
 use soroban_sdk::{Bytes, Env, Vec};
 
 use crate::types::{

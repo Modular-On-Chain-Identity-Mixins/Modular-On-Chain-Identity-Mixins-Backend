@@ -22,11 +22,17 @@ RUN apt-get update \
 
 COPY . .
 
-# Quality gate: format, lint, full test suite, then build the WASM artifacts.
+# Quality gate: format, lint (incl. test modules), full test suite, docs,
+# then the WASM artifacts. Mirrors the build/lint/test/doc jobs of
+# .github/workflows/ci.yml (coverage and audit run in CI only — they need
+# cargo-llvm-cov / cargo-audit, which are not installed in this image).
+# `--locked` keeps the build reproducible against the committed Cargo.lock.
 RUN cargo fmt --all -- --check \
-    && cargo clippy --workspace --all-targets -- -D warnings \
-    && cargo test --workspace --features testutils \
-    && cargo build --target wasm32v1-none --release -p identity-registry -p reference-defi-pool
+    && cargo clippy --workspace --all-targets --features testutils -- -D warnings \
+    && cargo test --locked --workspace \
+    && cargo test --locked --workspace --features testutils \
+    && RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps \
+    && cargo build --locked --target wasm32v1-none --release -p identity-registry -p reference-defi-pool
 
 # Minimal stage containing only the deployable contracts.
 FROM scratch AS wasm

@@ -1,9 +1,14 @@
+//! Contract entrypoints for the identity registry: registration, KYC
+//! lifecycle, allow-list governance, volume counters, custom fields and
+//! read-only views.
+
 use soroban_sdk::{contract, contracterror, contractevent, contractimpl, Address, Bytes, Env, Vec};
 
 use soroban_compliance_kit::types::{CustomField, Jurisdiction, KycStatus};
 
 use crate::storage::{self, IdentityData, VolumeData};
 
+/// The identity registry contract itself.
 #[contract]
 pub struct IdentityRegistryContract;
 
@@ -11,56 +16,77 @@ pub struct IdentityRegistryContract;
 // Typed contract events (SEP-57 compliant on-chain logging)
 // ---------------------------------------------------------------------------
 
+/// Emitted when a new identity is registered.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RegisterEvent {
+    /// The newly registered user.
     pub user: Address,
+    /// The initial KYC status (always `Pending`).
     pub kyc_status: KycStatus,
+    /// The user's access tier.
     pub tier: u32,
 }
 
+/// Emitted when a user's KYC status changes.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct KycUpdatedEvent {
+    /// The affected user.
     pub user: Address,
+    /// The new KYC status.
     pub status: KycStatus,
 }
 
+/// Emitted when a verifier is added to the KYC allow-list.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerifierAddedEvent {
+    /// The address granted KYC-update rights.
     pub verifier: Address,
 }
 
+/// Emitted when a verifier is removed from the KYC allow-list.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerifierRemovedEvent {
+    /// The address whose KYC-update rights were revoked.
     pub verifier: Address,
 }
 
+/// Emitted when a contract is authorized to update volume counters.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CallerAddedEvent {
+    /// The address granted volume-update rights.
     pub caller: Address,
 }
 
+/// Emitted when a contract loses volume-update rights.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CallerRemovedEvent {
+    /// The address whose volume-update rights were revoked.
     pub caller: Address,
 }
 
+/// Emitted when the supported-jurisdictions list is replaced.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JurisdictionsUpdatedEvent {
+    /// The new list of supported country codes.
     pub jurisdictions: Vec<Bytes>,
 }
 
+/// Emitted after a volume counter update.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VolumeUpdatedEvent {
+    /// The user whose counters changed.
     pub user: Address,
+    /// The updated daily volume counter.
     pub daily_volume: i128,
+    /// The updated monthly volume counter.
     pub monthly_volume: i128,
 }
 

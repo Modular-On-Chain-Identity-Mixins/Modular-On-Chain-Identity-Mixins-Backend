@@ -18,6 +18,7 @@ use identity_registry::contract::IdentityRegistryContractClient;
 
 type Contract = DefiPoolContract;
 
+/// The reference compliance-gated DeFi pool contract.
 #[contract]
 pub struct DefiPoolContract;
 
@@ -80,54 +81,77 @@ fn update_volume(
 // Typed contract events (on-chain audit log)
 // ---------------------------------------------------------------------------
 
+/// Emitted when the pool is constructed and its compliance module initialized.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PoolInitializedEvent {
+    /// The wrapped asset contract.
     pub token: Address,
+    /// The pool owner (admin).
     pub owner: Address,
+    /// The identity registry the pool enforces against.
     pub identity_registry: Address,
 }
 
+/// Emitted after a successful deposit.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DepositEvent {
+    /// The depositing user.
     pub from: Address,
+    /// The deposited amount.
     pub amount: i128,
+    /// Total pool liquidity after the deposit.
     pub total_liquidity: i128,
 }
 
+/// Emitted after a successful withdrawal.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WithdrawEvent {
+    /// The receiving user.
     pub to: Address,
+    /// The withdrawn amount.
     pub amount: i128,
+    /// Total pool liquidity after the withdrawal.
     pub total_liquidity: i128,
 }
 
+/// Emitted after a successful transfer between users.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TransferEvent {
+    /// The sending user.
     pub from: Address,
+    /// The receiving user.
     pub to: Address,
+    /// The transferred amount.
     pub amount: i128,
 }
 
+/// Emitted when the pool is paused or unpaused.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PauseEvent {
+    /// `true` when the pool entered the paused state.
     pub paused: bool,
 }
 
+/// Emitted when a compliance rule is appended.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RuleAddedEvent {
+    /// The index of the newly added rule.
     pub index: u32,
+    /// The added rule.
     pub rule: ComplianceRule,
 }
 
+/// Emitted when a compliance rule is removed.
 #[contractevent]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RuleRemovedEvent {
+    /// The index of the removed rule.
     pub index: u32,
 }
 

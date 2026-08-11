@@ -6,12 +6,41 @@ All notable changes to this workspace are documented here, following
 
 ## [Unreleased]
 
+### Fixed
+
+- **CI/CD**: `.github/workflows/ci.yml` was structurally broken — the
+  `coverage` job had no steps and the `audit` job had duplicated
+  `permissions:`/`steps:` keys with the coverage steps merged into it, which
+  GitHub Actions rejects. Both jobs now have correct, complete definitions
+  and the workflow parses cleanly.
+- **Docker**: the builder quality gate now matches CI exactly (clippy with
+  `--features testutils`, `--locked` on all cargo invocations).
+
 ### Added
 
+- `make verify` — full CI-parity target (fmt, lint, tests, WASM build, docs,
+  coverage gate, audit) so CI can be validated locally before pushing.
+- `.github/pull_request_template.md` — PR checklist.
+- `.cargo/audit.toml` — documents the accepted `RUSTSEC-2024-0436`
+  (transitive `paste` unmaintained warning; no vulnerable usage, see file).
+- `#![deny(unsafe_code)]` and crate/module-level documentation across all
+  crates; doc comments for every typed contract event.
+- CI `concurrency` groups (cancel superseded runs) and least-privilege
+  `permissions: contents: read`.
+- GitHub Actions bumped to current majors: `actions/checkout@v7`,
+  `actions/upload-artifact@v7`, `softprops/action-gh-release@v3`.
+- Release workflow now runs the full test suite before publishing WASM
+  artifacts, so a broken build can never be released.
 - `SECURITY.md` — vulnerability disclosure policy.
 - `CONTRIBUTING.md` — development workflow and CI gate guide.
 - `CHANGELOG.md` — this file.
 - `LICENSE` — MIT license text matching the workspace metadata.
+
+### Changed
+
+- Updated `proptest` to 1.11.0.
+- README: refreshed coverage figures (measured 94.19% lines) and documented
+  the `make verify` gate.
 
 ## [0.1.0] - 2026-08-10
 

@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# Tag builds are idempotent; prevent overlapping runs for the same tag.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   release:
     name: Build & attach WASM artifacts
@@ -15,7 +20,7 @@ jobs:
     env:
       RUSTFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -25,11 +30,16 @@ jobs:
       - name: Cache cargo registry & build artifacts
         uses: Swatinem/rust-cache@v2
 
+      # Release tags must not publish a broken build: run the full test
+      # suite before building the WASM artifacts.
+      - name: Test (full suite with testutils)
+        run: cargo test --locked --workspace --features testutils
+
       - name: Build contracts for wasm32v1-none
         run: cargo build --locked --target wasm32v1-none --release -p identity-registry -p reference-defi-pool
 
       - name: Create GitHub release with WASM artifacts
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             target/wasm32v1-none/release/identity_registry.wasm
