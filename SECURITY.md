@@ -20,8 +20,12 @@ vulnerability reporting instead:
 1. Open the **Security** tab of this repository.
 2. Click **Report a vulnerability** and fill in the form.
 
-If you cannot use private reporting, email the maintainers directly (address
-in the repository profile). Please include:
+> **Security contact email** — to receive notifications for private reports,
+> set a contact email under **Repository settings → Security → Security
+> contact**. No contact email is stored anywhere in this codebase, so this
+> file never goes stale and requires no secret management.
+
+Please include:
 
 - Which contract/crate and version is affected.
 - A minimal, reproducible test case (prefer a Soroban unit test).

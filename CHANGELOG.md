@@ -6,6 +6,16 @@ All notable changes to this workspace are documented here, following
 
 ## [Unreleased]
 
+### Added
+
+- `.github/CODEOWNERS` — single-maintainer default review policy.
+
+### Changed
+
+- `SECURITY.md` — reporting flow now points solely at GitHub private
+  vulnerability reporting (removed the dangling email reference) and
+  documents the security-contact email setting.
+
 ## [0.2.0] - 2026-08-11
 
 ### Fixed

@@ -1,0 +1,20 @@
+# CODEOWNERS — default reviewers for pull requests.
+#
+# This repository is maintained by a single owner. Every pull request must
+# be reviewed by the code owner before merge (enforced automatically when
+# branch protection requires "review from code owners").
+#
+# Syntax: <glob pattern> <owner>  (see docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners)
+
+# The maintainer owns everything: contracts, the compliance kit, CI/CD
+# workflows, scripts and documentation.
+* @lekescrew22
+
+# Smart contracts and on-chain state changes get an explicit extra review
+# owner so nobody ships contract changes without the maintainer's sign-off.
+identity-registry/ @lekescrew22
+reference-defi-pool/ @lekescrew22
+soroban-compliance-kit/ @lekescrew22
+
+# CI/CD and release automation.
+/.github/ @lekescrew22
