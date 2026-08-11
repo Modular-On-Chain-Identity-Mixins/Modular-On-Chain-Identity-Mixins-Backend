@@ -1,0 +1,58 @@
+# cargo-deny configuration — license, ban (duplicate/version) and advisory gates.
+# Run locally with `cargo deny check` (requires: cargo install cargo-deny --locked).
+# CI: .github/workflows/ci.yml -> the `deny` job.
+
+# version = 2 opts into the modern schema: advisories are denied, and licenses
+# are denied unless explicitly allowed (see EmbarkStudios/cargo-deny#611).
+
+[advisories]
+version = 2
+yanked = "warn"
+# `paste` (RUSTSEC-2024-0436) is flagged "unmaintained", not vulnerable. It is
+# a transitive dependency of ark-ff (soroban-env-host -> soroban-sdk's
+# BLS12-381/BN254 pairing stack) with no patched or successor release the SDK
+# can adopt. Mirrors .cargo/audit.toml; revisit on any soroban-sdk upgrade.
+ignore = ["RUSTSEC-2024-0436"]
+
+[bans]
+# Any new duplicate crate version fails CI; the skip list below documents the
+# known, unavoidable duplicates.
+multiple-versions = "deny"
+# Workspace members are declared as path / `workspace = true` deps (no
+# version by design), which cargo-deny reports as wildcards — keep that a
+# warning rather than a hard error.
+wildcards = "warn"
+# Duplicate versions pinned by the Soroban SDK / ark crypto stack (build-deps
+# and runtime deps lock different minors — not resolvable without upstream
+# changes). Revisit whenever soroban-sdk is upgraded.
+skip = [
+    "block-buffer",
+    "cpufeatures",
+    "crate-git-revision",
+    "crypto-common",
+    "curve25519-dalek",
+    "darling",
+    "darling_core",
+    "darling_macro",
+    "digest",
+    "fiat-crypto",
+    "hashbrown",
+    "stellar-strkey",
+    "syn",
+]
+
+[licenses]
+version = 2
+# Every license in the dependency tree is permissive (verified with
+# `cargo deny check licenses`). Anything not on this allow-list fails CI.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Zlib",
+    "Unlicense",
+    "Unicode-3.0",
+]
+confidence-threshold = 0.8

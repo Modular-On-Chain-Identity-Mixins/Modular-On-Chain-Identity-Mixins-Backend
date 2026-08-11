@@ -6,6 +6,8 @@ All notable changes to this workspace are documented here, following
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-11
+
 ### Fixed
 
 - **CI/CD**: `.github/workflows/ci.yml` was structurally broken — the
@@ -19,7 +21,10 @@ All notable changes to this workspace are documented here, following
 ### Added
 
 - `make verify` — full CI-parity target (fmt, lint, tests, WASM build, docs,
-  coverage gate, audit) so CI can be validated locally before pushing.
+  coverage gate, audit, deny) so CI can be validated locally before pushing.
+- `deny.toml` + `cargo deny check` gate (CI `deny` job): license allow-list,
+  duplicate-version bans with documented skips, and advisory policy
+  mirroring cargo-audit.
 - `.github/pull_request_template.md` — PR checklist.
 - `.cargo/audit.toml` — documents the accepted `RUSTSEC-2024-0436`
   (transitive `paste` unmaintained warning; no vulnerable usage, see file).
@@ -39,8 +44,9 @@ All notable changes to this workspace are documented here, following
 ### Changed
 
 - Updated `proptest` to 1.11.0.
+- Workspace crate version bumped to 0.2.0.
 - README: refreshed coverage figures (measured 94.19% lines) and documented
-  the `make verify` gate.
+  the `make verify` gate and the cargo-deny checks.
 
 ## [0.1.0] - 2026-08-10
 
@@ -88,5 +94,6 @@ Initial production-ready release.
     (soroban-sdk 27.0.5).
   - README rewrite, `docs/QUICKSTART.md`, `SEP57_COMPLIANCE.md` mapping.
 
-[Unreleased]: https://github.com/Modular-On-Chain-Identity-Mixins/Modular-On-Chain-Identity-Mixins-Backend/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Modular-On-Chain-Identity-Mixins/Modular-On-Chain-Identity-Mixins-Backend/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Modular-On-Chain-Identity-Mixins/Modular-On-Chain-Identity-Mixins-Backend/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Modular-On-Chain-Identity-Mixins/Modular-On-Chain-Identity-Mixins-Backend/releases/tag/v0.1.0

@@ -150,3 +150,24 @@ jobs:
       # weekly on the schedule trigger.
       - name: Audit dependencies
         run: cargo audit
+
+  deny:
+    name: License & duplicate-crate check (cargo-deny)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry & build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@cargo-deny
+
+      # Hard gate driven by deny.toml: licenses must be on the allow-list and
+      # new duplicate crate versions fail. Runs on every push/PR.
+      - name: Check licenses, bans and advisories
+        run: cargo deny check

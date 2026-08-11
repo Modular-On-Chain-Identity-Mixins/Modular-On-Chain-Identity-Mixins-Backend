@@ -1002,7 +1002,7 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "identity-registry"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "soroban-compliance-kit",
  "soroban-sdk",
@@ -1457,7 +1457,7 @@ dependencies = [
 
 [[package]]
 name = "reference-defi-pool"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "identity-registry",
  "soroban-compliance-kit",
@@ -1714,7 +1714,7 @@ dependencies = [
 
 [[package]]
 name = "soroban-compliance-kit"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proptest",
  "soroban-sdk",

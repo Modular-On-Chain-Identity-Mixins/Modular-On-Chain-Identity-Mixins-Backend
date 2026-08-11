@@ -49,6 +49,8 @@ Every pull request runs the full CI matrix. In order of failure likelihood:
 5. `cargo doc --workspace --no-deps` with `RUSTDOCFLAGS=-D warnings`.
 6. `cargo llvm-cov --workspace --features testutils --fail-under-lines 80`.
 7. `cargo audit` — RustSec advisory scan of `Cargo.lock`.
+8. `cargo deny check` — license allow-list, duplicate-version bans and
+   advisory policy (see [`deny.toml`](deny.toml)).
 
 **Run `make verify`** — it executes this exact sequence locally. If any of
 these fail, CI is red — fix locally before asking for review.

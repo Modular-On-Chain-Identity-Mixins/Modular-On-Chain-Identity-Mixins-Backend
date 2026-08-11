@@ -86,10 +86,12 @@ docker compose run --rm dev test
 | Build API docs | `make doc` |
 | Line coverage (80% gate) | `make coverage` |
 | Dependency audit (RustSec DB) | `make audit` |
+| License / duplicate-crate gate (cargo-deny) | `make deny` |
 
 `make verify` runs the *exact* same sequence as `.github/workflows/ci.yml`
 (fmt, clippy with `-D warnings`, tests, WASM build, docs, coverage gate,
-dependency audit) — green locally means green in GitHub Actions.
+dependency audit, license/duplicate checks) — green locally means green in
+GitHub Actions.
 
 The fast gate (`make all`) runs:
 
@@ -121,6 +123,13 @@ Coverage (requires `cargo install cargo-llvm-cov`):
 
 ```bash
 make coverage
+```
+
+License/duplicate/ban gates (requires `cargo install cargo-deny --locked`,
+config in [`deny.toml`](deny.toml)):
+
+```bash
+make deny
 ```
 
 Measured on the current test suite: **~94% line coverage** (registry 99%,
@@ -241,6 +250,8 @@ weekly on a schedule):
    artifact upload
 4. **coverage** — `cargo llvm-cov` with an 80% line gate + lcov artifact
 5. **audit** — `cargo audit` against the RustSec advisory DB
+6. **deny** — `cargo deny check` (license allow-list, duplicate-version bans,
+   advisory policy — configured in [`deny.toml`](deny.toml))
 
 Run the identical gate locally with **`make verify`** before pushing.
 
